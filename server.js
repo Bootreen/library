@@ -14,6 +14,11 @@ app.get("/tracks", async (_, res) => {
   res.json(rows);
 });
 
+app.get("/artists", async (_, res) => {
+  const { rows } = await sql`SELECT * FROM artists`;
+  res.json(rows);
+});
+
 app.get("/tracks/:id", async (req, res) => {
   const { id } = req.params;
   const { rows } = await sql`SELECT * FROM tracks WHERE tracks.id = ${id} `;
@@ -32,6 +37,70 @@ app.post("/tracks", async (req, res) => {
   res.json({
     msg: `A new track ${name} was added, ${rowCount} tracks total.`,
   });
+});
+
+app.post("/artists", async (req, res) => {
+  const REJECTED =
+    " records missed at least one mandatory property and was automatically rejected.";
+  const ADDED = " records was successfully added.";
+
+  const { payload } = req.body;
+  const rejectedRecordsCount = payload.filter(
+    ({ id, name, imageUrl }) => !id || !name || !imageUrl
+  ).length;
+  const approvedPayload = payload
+    // reject records with missed mandatory properties
+    .filter(({ id, name, imageUrl }) => id && name && imageUrl)
+    // add initial value for empty non-mandatory properties
+    .map((record) =>
+      record.popularity ? record : { ...record, popularity: 0 }
+    )
+    .map((record) => (record.genres ? record : { ...record, genres: [] }));
+
+  if (approvedPayload.length === 0) {
+    return res.json({
+      msg: `${
+        rejectedRecordsCount > 0 ? rejectedRecordsCount + REJECTED : ""
+      } 0${ADDED}`,
+    });
+  }
+
+  const queryParameters = [];
+  let valuesString = approvedPayload
+    .map((record, index) => {
+      const baseIndex = index * 5 + 1;
+      queryParameters.push(
+        record.id,
+        record.name,
+        record.popularity,
+        record.genres,
+        record.imageUrl
+      );
+      return `($${baseIndex}, $${baseIndex + 1}, $${baseIndex + 2}, $${
+        baseIndex + 3
+      }, $${baseIndex + 4}, CURRENT_TIMESTAMP)`;
+    })
+    .join(", ");
+
+  const query = `
+    INSERT INTO Artists (ID, NAME, POPULARITY, GENRES, IMAGE_URL, CREATED_AT)
+    VALUES ${valuesString}
+  `;
+
+  try {
+    const client = await sql.connect();
+    const { rowCount } = await client.query(query, queryParameters);
+    client.release();
+
+    res.json({
+      msg: `${
+        rejectedRecordsCount > 0 ? rejectedRecordsCount + REJECTED : ""
+      } ${rowCount}${ADDED}`,
+    });
+  } catch (error) {
+    console.error("Error inserting records:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // app.delete("/notes/:id", async (req, res) => {
