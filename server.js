@@ -41,8 +41,8 @@ app.post("/tracks", async (req, res) => {
 
 app.post("/artists", async (req, res) => {
   const REJECTED =
-    " records missed at least one mandatory property and was automatically rejected.";
-  const ADDED = " records was successfully added.";
+    " records missed at least one mandatory property and were automatically rejected.";
+  const ADDED = " records were successfully added.";
 
   const { payload } = req.body;
   const rejectedRecordsCount = payload.filter(
@@ -58,29 +58,30 @@ app.post("/artists", async (req, res) => {
     .map((record) => (record.genres ? record : { ...record, genres: [] }));
 
   if (approvedPayload.length === 0) {
-    return res.json({
+    return res.status(400).json({
+      error: "Query syntax error, all records were rejected",
       msg: `${
         rejectedRecordsCount > 0 ? rejectedRecordsCount + REJECTED : ""
       } 0${ADDED}`,
     });
   }
 
-  const queryParameters = [];
   let valuesString = approvedPayload
-    .map((record, index) => {
+    .map((_, index) => {
       const baseIndex = index * 5 + 1;
-      queryParameters.push(
-        record.id,
-        record.name,
-        record.popularity,
-        record.genres,
-        record.imageUrl
-      );
-      return `($${baseIndex}, $${baseIndex + 1}, $${baseIndex + 2}, $${
-        baseIndex + 3
-      }, $${baseIndex + 4}, CURRENT_TIMESTAMP)`;
+      return `($${baseIndex}, $${baseIndex + 1}, $${baseIndex + 2},
+      $${baseIndex + 3}, $${baseIndex + 4}, CURRENT_TIMESTAMP)`;
     })
     .join(", ");
+  const queryParameters = approvedPayload
+    .map(({ id, name, popularity, genres, imageUrl }) => [
+      id,
+      name,
+      popularity,
+      genres,
+      imageUrl,
+    ])
+    .flat();
 
   const query = `
     INSERT INTO Artists (ID, NAME, POPULARITY, GENRES, IMAGE_URL, CREATED_AT)
