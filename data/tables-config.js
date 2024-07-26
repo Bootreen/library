@@ -23,7 +23,7 @@ const tablesConfig = {
     mandatoryFields: ["name"],
     defaultValues: { description: "" },
     columns: ["name", "description"],
-    nameField: "name", // Check for duplicates by name
+    checkField: "name", // Check for duplicates by name
   },
   tracks: {
     tableName: "Tracks",

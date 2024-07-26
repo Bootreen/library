@@ -13,22 +13,27 @@ const filterAndPreparePayload = (payload, mandatoryFields, defaultValues) => {
   return { approvedPayload, rejectedRecordsCount };
 };
 
-const checkDuplicates = async (client, tableName, ids, nameField = null) => {
+const checkDuplicates = async (
+  client,
+  tableName,
+  uniqueIdArray,
+  checkField = null
+) => {
   let query;
   let queryParams;
 
-  if (nameField) {
+  if (checkField) {
     // Check for duplicates by name field
-    query = `SELECT ${nameField} FROM ${tableName} WHERE ${nameField} = ANY($1::text[])`;
-    queryParams = [ids];
+    query = `SELECT ${checkField} FROM ${tableName} WHERE ${checkField} = ANY($1::text[])`;
+    queryParams = [uniqueIdArray];
   } else {
     // Check for duplicates by id
     query = `SELECT id FROM ${tableName} WHERE id = ANY($1::text[])`;
-    queryParams = [ids];
+    queryParams = [uniqueIdArray];
   }
 
   const result = await client.query(query, queryParams);
-  return result.rows.map((row) => (nameField ? row[nameField] : row.id));
+  return result.rows.map((row) => (checkField ? row[checkField] : row.id));
 };
 
 const prepareInsertQuery = (tableName, newRecords, columns) => {

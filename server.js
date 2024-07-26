@@ -33,14 +33,14 @@ app.get("/tracks", async (_, res) => {
   res.json(rows);
 });
 
-app.get("/artists", async (_, res) => {
-  const { rows } = await sql`SELECT * FROM artists`;
-  res.json(rows);
-});
-
 app.get("/tracks/:id", async (req, res) => {
   const { id } = req.params;
   const { rows } = await sql`SELECT * FROM tracks WHERE tracks.id = ${id} `;
+  res.json(rows);
+});
+
+app.get("/artists", async (_, res) => {
+  const { rows } = await sql`SELECT * FROM artists`;
   res.json(rows);
 });
 
@@ -52,7 +52,7 @@ app.post("/:table", async (req, res) => {
     return res.status(400).json({ error: ERR_TABLE });
   }
 
-  const { tableName, mandatoryFields, defaultValues, columns, nameField } =
+  const { tableName, mandatoryFields, defaultValues, columns, checkField } =
     tablesConfig[table];
   const { approvedPayload, rejectedRecordsCount } = filterAndPreparePayload(
     payload,
@@ -63,27 +63,30 @@ app.post("/:table", async (req, res) => {
   if (approvedPayload.length === 0) {
     return res.status(400).json({
       error: ERR_QUERY,
-      msg: `${
-        rejectedRecordsCount > 0 ? `${rejectedRecordsCount}${REJECTED}` : ""
-      } 0${ADDED}`,
+      msg:
+        (rejectedRecordsCount > 0
+          ? rejectedRecordsCount + REJECTED + " "
+          : "") +
+        0 +
+        ADDED,
     });
   }
 
   try {
     const client = await sql.connect();
 
-    const idsOrNames = approvedPayload.map(
-      (record) => record.id || record[nameField]
+    const uniqueIdArray = approvedPayload.map(
+      (record) => record.id || record[checkField]
     );
     const existingRecords = await checkDuplicates(
       client,
       tableName,
-      idsOrNames,
-      nameField
+      uniqueIdArray,
+      checkField
     );
 
     const newRecords = approvedPayload.filter(
-      (record) => !existingRecords.includes(record.id || record[nameField])
+      (record) => !existingRecords.includes(record.id || record[checkField])
     );
 
     if (newRecords.length === 0) {
@@ -104,9 +107,12 @@ app.post("/:table", async (req, res) => {
     client.release();
 
     res.json({
-      msg: `${
-        rejectedRecordsCount > 0 ? `${rejectedRecordsCount}${REJECTED}` : ""
-      } ${rowCount}${ADDED}`,
+      msg:
+        (rejectedRecordsCount > 0
+          ? rejectedRecordsCount + REJECTED + " "
+          : "") +
+        rowCount +
+        ADDED,
     });
   } catch (error) {
     console.error(ERR_INSERT, error);
