@@ -3,6 +3,7 @@ const MSG_TEMPLATES = {
   SERVER: "Server running on port",
   REJECTED:
     " records missed at least one mandatory property and were automatically rejected.",
+  EXIST: " records already exist in database and were automatically rejected.",
   ADDED: " records were successfully added.",
   ERR_TABLE: "Invalid table name",
   ERR_QUERY: "Query syntax error, all records were rejected",
