@@ -52,6 +52,12 @@ const tablesConfig = {
       "valence",
     ],
   },
+  artists_tracks: {
+    tableName: "Artists_tracks",
+    mandatoryFields: ["artists_ids", "id"],
+    defaultValues: false,
+    columns: ["artist_id", "track_id"],
+  },
 };
 
 module.exports = tablesConfig;

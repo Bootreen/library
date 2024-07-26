@@ -3,7 +3,8 @@ const express = require("express");
 const { sql } = require("@vercel/postgres");
 const tablesConfig = require("./data/tables-config");
 const {
-  filterAndPreparePayload,
+  preparePayload,
+  joinPairs,
   checkDuplicates,
   prepareInsertQuery,
 } = require("./utils/sql-helpers");
@@ -54,12 +55,15 @@ app.post("/:table", async (req, res) => {
     return res.status(400).json({ error: ERR_TABLE });
   }
 
-  // Read current table configuration
+  // Read current table config
   const { tableName, mandatoryFields, defaultValues, columns, checkField } =
     tablesConfig[table];
 
-  // Check payload for mandatory fields existance and fill out default values
-  const { approvedPayload, rejectedRecordsCount } = filterAndPreparePayload(
+  const isJunction = !defaultValues;
+
+  // Check payload for mandatory fields existance
+  // and fill out default values if needed
+  const { approvedPayload, rejectedRecordsCount } = preparePayload(
     payload,
     mandatoryFields,
     defaultValues
@@ -78,29 +82,32 @@ app.post("/:table", async (req, res) => {
     });
   }
 
+  const finalPayload = isJunction
+    ? joinPairs(approvedPayload)
+    : approvedPayload;
+
   try {
     const client = await sql.connect();
 
     // Gather unique identifiers for the current table (id or other field)
-    const uniqueIdArray = approvedPayload.map(
+    const uniqueIdArray = finalPayload.map(
       (record) => record.id || record[checkField]
     );
 
     // Check if some of payload records are already in database
-    const existingRecords = await checkDuplicates(
-      client,
-      tableName,
-      uniqueIdArray,
-      checkField
-    );
+    const existingRecordsIds = isJunction
+      ? [] // Junction tables check for duplicates in a different way
+      : await checkDuplicates(client, tableName, uniqueIdArray, checkField);
 
     // Filter out duplicates
-    const newRecords = approvedPayload.filter(
-      (record) => !existingRecords.includes(record.id || record[checkField])
+    const newRecords = finalPayload.filter(
+      (record) => !existingRecordsIds.includes(record.id || record[checkField])
     );
 
+    console.log(newRecords);
+
     // Count duplicates
-    const duplicateRecordsCount = approvedPayload.length - newRecords.length;
+    const duplicateRecordsCount = finalPayload.length - newRecords.length;
 
     // No new records at all
     if (newRecords.length === 0) {
@@ -112,6 +119,7 @@ app.post("/:table", async (req, res) => {
 
     // Parse payload into SQL-query
     const { query, queryParameters } = prepareInsertQuery(
+      isJunction,
       tableName,
       newRecords,
       columns
