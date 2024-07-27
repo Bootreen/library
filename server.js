@@ -1,9 +1,12 @@
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 const { sql } = require("@vercel/postgres");
 const tablesConfig = require("./data/tables-config");
 const {
-  filterAndPreparePayload,
+  preparePayload,
+  getGenresIds,
+  joinPairs,
   checkDuplicates,
   prepareInsertQuery,
 } = require("./utils/sql-helpers");
@@ -11,6 +14,8 @@ const MSG_TEMPLATES = require("./data/message-templates");
 
 const app = express();
 app.use(express.json());
+// Enable CORS for all routes
+app.use(cors());
 
 const {
   INTRO,
@@ -54,12 +59,15 @@ app.post("/:table", async (req, res) => {
     return res.status(400).json({ error: ERR_TABLE });
   }
 
-  // Read current table configuration
+  // Read current table config
   const { tableName, mandatoryFields, defaultValues, columns, checkField } =
     tablesConfig[table];
 
-  // Check payload for mandatory fields existance and fill out default values
-  const { approvedPayload, rejectedRecordsCount } = filterAndPreparePayload(
+  const isJunction = !defaultValues;
+
+  // Check payload for mandatory fields existance
+  // and fill out default values if needed
+  const { approvedPayload, rejectedRecordsCount } = preparePayload(
     payload,
     mandatoryFields,
     defaultValues
@@ -78,29 +86,42 @@ app.post("/:table", async (req, res) => {
     });
   }
 
+  if (table.startsWith("genres_")) {
+    const genresNames = [];
+    approvedPayload.forEach(({ genres }) =>
+      genres.forEach((genre) => genresNames.push(genre))
+    );
+    const genreMap = await getGenresIds([...genresNames]);
+    // Substitute ids instead of genre names
+    approvedPayload.forEach((_, i, arr) => {
+      arr[i].genres = arr[i].genres.map((genre) => genreMap[genre]);
+    });
+  }
+
+  const finalPayload = isJunction
+    ? joinPairs(approvedPayload, table)
+    : approvedPayload;
+
   try {
     const client = await sql.connect();
 
     // Gather unique identifiers for the current table (id or other field)
-    const uniqueIdArray = approvedPayload.map(
+    const uniqueIdArray = finalPayload.map(
       (record) => record.id || record[checkField]
     );
 
     // Check if some of payload records are already in database
-    const existingRecords = await checkDuplicates(
-      client,
-      tableName,
-      uniqueIdArray,
-      checkField
-    );
+    const existingRecordsIds = isJunction
+      ? [] // Junction tables check for duplicates in a different way
+      : await checkDuplicates(client, tableName, uniqueIdArray, checkField);
 
     // Filter out duplicates
-    const newRecords = approvedPayload.filter(
-      (record) => !existingRecords.includes(record.id || record[checkField])
+    const newRecords = finalPayload.filter(
+      (record) => !existingRecordsIds.includes(record.id || record[checkField])
     );
 
     // Count duplicates
-    const duplicateRecordsCount = approvedPayload.length - newRecords.length;
+    const duplicateRecordsCount = finalPayload.length - newRecords.length;
 
     // No new records at all
     if (newRecords.length === 0) {
@@ -112,6 +133,7 @@ app.post("/:table", async (req, res) => {
 
     // Parse payload into SQL-query
     const { query, queryParameters } = prepareInsertQuery(
+      isJunction,
       tableName,
       newRecords,
       columns
