@@ -1,19 +1,6 @@
+const { sql } = require("@vercel/postgres");
+
 const preparePayload = (payload, mandatoryFields, defaultValues) => {
-  const rejectedRecordsCount = payload.filter((record) =>
-    mandatoryFields.some((field) => {
-      console.log(
-        record[field],
-        Array.isArray(record[field]) && record[field].length === 0
-      );
-      return (
-        // If mandatory is missed
-        !record[field] ||
-        // Or mandatory field present, but it's an empty array
-        // (equals to missed mandatory field)
-        (Array.isArray(record[field]) && record[field].length === 0)
-      );
-    })
-  ).length;
   const approvedPayload = payload
     .filter((record) =>
       mandatoryFields.every(
@@ -34,16 +21,41 @@ const preparePayload = (payload, mandatoryFields, defaultValues) => {
             ...record,
           }
     );
+  const rejectedRecordsCount = payload.length - approvedPayload.length;
 
   return { approvedPayload, rejectedRecordsCount };
 };
 
-const joinPairs = (approvedPayload) => {
+const getGenresIds = async (genres) => {
+  const { rows } =
+    await sql`SELECT id, name FROM genres WHERE name = ANY(${genres})`;
+  return rows.reduce((map, row) => {
+    map[row.name] = row.id;
+    return map;
+  }, {});
+};
+
+// Join id pairs for junction tables
+const joinPairs = (approvedPayload, table) => {
   const junctionPairs = [];
 
-  for (const { id: track_id, artists_ids } of approvedPayload)
-    for (const artist_id of artists_ids)
-      junctionPairs.push({ artist_id: artist_id, track_id: track_id });
+  // for (const { id: track_id, artists_ids } of approvedPayload)
+  //   for (const artist_id of artists_ids)
+  //     junctionPairs.push({ artist_id: artist_id, track_id: track_id });
+
+  approvedPayload.forEach((record) => {
+    if (table === "artists_tracks") {
+      const { artists_ids, id: track_id } = record;
+      artists_ids.forEach((artist_id) => {
+        junctionPairs.push({ artist_id, track_id });
+      });
+    } else {
+      const { id, genres } = record;
+      genres.forEach((genre_id) => {
+        junctionPairs.push({ [`${table.slice(0, -1)}_id`]: id, genre_id });
+      });
+    }
+  });
 
   return junctionPairs;
 };
@@ -54,18 +66,16 @@ const checkDuplicates = async (
   uniqueIdArray,
   checkField = null
 ) => {
-  let query;
+  const query = checkField
+    ? // Check for duplicates by name field
+      `SELECT ${checkField} FROM ${tableName} WHERE ${checkField} = ANY($1::text[])`
+    : // Check for duplicates by string hash-id
+      (query = `SELECT id FROM ${tableName} WHERE id = ANY($1::text[])`);
   const queryParams = [uniqueIdArray];
 
-  if (checkField) {
-    // Check for duplicates by name field
-    query = `SELECT ${checkField} FROM ${tableName} WHERE ${checkField} = ANY($1::text[])`;
-  } else {
-    // Check for duplicates by string hash-id
-    query = `SELECT id FROM ${tableName} WHERE id = ANY($1::text[])`;
-  }
-
+  // Query for duplicates
   const check = await client.query(query, queryParams);
+  // Return an array of identifiers for all duplicates found
   const result = check.rows.map((row) =>
     checkField ? row[checkField] : row.id
   );
@@ -74,7 +84,8 @@ const checkDuplicates = async (
 };
 
 const prepareInsertQuery = (isJunction, tableName, newRecords, columns) => {
-  let valuesString = newRecords
+  // Create placeholders for all SQL values ($1, $2, $3, ...), ($n1, $n2, $n3, ...), ...
+  const valuesString = newRecords
     .map((_, index) => {
       const baseIndex = index * columns.length + 1;
       const placeholders = columns
@@ -84,6 +95,7 @@ const prepareInsertQuery = (isJunction, tableName, newRecords, columns) => {
     })
     .join(", ");
 
+  // Gather all values for SQL value-placeholders in a saparate array
   const queryParameters = newRecords
     .map((record) => columns.map((column) => record[column]))
     .flat();
@@ -93,6 +105,7 @@ const prepareInsertQuery = (isJunction, tableName, newRecords, columns) => {
     ? `ON CONFLICT (${columns.join(", ")}) DO NOTHING`
     : "";
 
+  // Compose SQL-query from header and values placeholders
   const query = `
     INSERT INTO ${tableName} (${columns.join(", ")}, created_at)
     VALUES ${valuesString}
@@ -104,6 +117,7 @@ const prepareInsertQuery = (isJunction, tableName, newRecords, columns) => {
 
 module.exports = {
   preparePayload,
+  getGenresIds,
   joinPairs,
   checkDuplicates,
   prepareInsertQuery,

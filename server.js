@@ -4,6 +4,7 @@ const { sql } = require("@vercel/postgres");
 const tablesConfig = require("./data/tables-config");
 const {
   preparePayload,
+  getGenresIds,
   joinPairs,
   checkDuplicates,
   prepareInsertQuery,
@@ -82,8 +83,20 @@ app.post("/:table", async (req, res) => {
     });
   }
 
+  if (table.startsWith("genres_")) {
+    const genresNames = [];
+    approvedPayload.forEach(({ genres }) =>
+      genres.forEach((genre) => genresNames.push(genre))
+    );
+    const genreMap = await getGenresIds([...genreNames]);
+    // Substitute ids instead of genre names
+    approvedPayload.forEach(
+      ({ genres }) => (genres = genres.map((genre) => genreMap[genre]))
+    );
+  }
+
   const finalPayload = isJunction
-    ? joinPairs(approvedPayload)
+    ? joinPairs(approvedPayload, table)
     : approvedPayload;
 
   try {
@@ -103,8 +116,6 @@ app.post("/:table", async (req, res) => {
     const newRecords = finalPayload.filter(
       (record) => !existingRecordsIds.includes(record.id || record[checkField])
     );
-
-    console.log(newRecords);
 
     // Count duplicates
     const duplicateRecordsCount = finalPayload.length - newRecords.length;
