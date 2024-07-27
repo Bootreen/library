@@ -29,6 +29,8 @@ const preparePayload = (payload, mandatoryFields, defaultValues) => {
 const getGenresIds = async (genres) => {
   const { rows } =
     await sql`SELECT id, name FROM genres WHERE name = ANY(${genres})`;
+  // Return object, where genre name is a key and genre id is a value
+  // { genre1_name: id1, genre2_name: id2, genre3_name: id3, ... }
   return rows.reduce((map, row) => {
     map[row.name] = row.id;
     return map;
@@ -39,10 +41,6 @@ const getGenresIds = async (genres) => {
 const joinPairs = (approvedPayload, table) => {
   const junctionPairs = [];
 
-  // for (const { id: track_id, artists_ids } of approvedPayload)
-  //   for (const artist_id of artists_ids)
-  //     junctionPairs.push({ artist_id: artist_id, track_id: track_id });
-
   approvedPayload.forEach((record) => {
     if (table === "artists_tracks") {
       const { artists_ids, id: track_id } = record;
@@ -52,7 +50,10 @@ const joinPairs = (approvedPayload, table) => {
     } else {
       const { id, genres } = record;
       genres.forEach((genre_id) => {
-        junctionPairs.push({ [`${table.slice(0, -1)}_id`]: id, genre_id });
+        junctionPairs.push({
+          [`${table.split("_")[1].slice(0, -1)}_id`]: id,
+          genre_id,
+        });
       });
     }
   });

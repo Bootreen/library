@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 const { sql } = require("@vercel/postgres");
 const tablesConfig = require("./data/tables-config");
 const {
@@ -13,6 +14,8 @@ const MSG_TEMPLATES = require("./data/message-templates");
 
 const app = express();
 app.use(express.json());
+// Enable CORS for all routes
+app.use(cors());
 
 const {
   INTRO,
@@ -88,11 +91,11 @@ app.post("/:table", async (req, res) => {
     approvedPayload.forEach(({ genres }) =>
       genres.forEach((genre) => genresNames.push(genre))
     );
-    const genreMap = await getGenresIds([...genreNames]);
+    const genreMap = await getGenresIds([...genresNames]);
     // Substitute ids instead of genre names
-    approvedPayload.forEach(
-      ({ genres }) => (genres = genres.map((genre) => genreMap[genre]))
-    );
+    approvedPayload.forEach((_, i, arr) => {
+      arr[i].genres = arr[i].genres.map((genre) => genreMap[genre]);
+    });
   }
 
   const finalPayload = isJunction
