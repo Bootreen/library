@@ -6,9 +6,10 @@ const MSG_TEMPLATES = require("./data/message-templates");
 
 const {
   INTRO,
+  SERVER,
   REJECTED,
   DUPLICATES,
-  SERVER,
+  ADDED,
   ERR_TABLE,
   ERR_SYNTAX,
   ERR_DUPLICATES,
@@ -106,16 +107,21 @@ app.post("/bulk/:table", async (req, res) => {
     // Build SQL query
     const query = `SELECT name FROM users WHERE ${checkField} IN (${placeholders})`;
     // Query for duplicates
-    const { rows } = await sql.query(query, identifiers);
-    // Return array of duplicate identifiers (names or titles)
-    return rows.map((row) => row[checkField]);
+    // const { rows } = await sql.query(query, identifiers);
+    // // Return array of duplicate identifiers (names or titles)
+    // return rows.map((row) => row[checkField]);
+
+    const check = await sql.query(query, identifiers);
+    result = check.rows.map((row) => row[checkField]);
+    return result;
   };
 
   // Gather identifiers
   const identifiers = approvedPayload.map((record) => record[checkField]);
   // Check for the duplicates and filter them out
-  const finalPayload = approvedPayload.filter((record) =>
-    checkDuplicates(identifiers).includes(record[checkField])
+  const duplicates = await checkDuplicates(identifiers);
+  const finalPayload = approvedPayload.filter(
+    (record) => !duplicates.includes(record[checkField])
   );
   // All valid records already exist
   if (finalPayload.length === 0) {
@@ -156,13 +162,15 @@ app.post("/bulk/:table", async (req, res) => {
   try {
     const { rowCount } = await sql.query(query, queryParameters);
     // Report insertion result
-    res.json(
-      (rejectedByErrors > 0 ? rejectedByErrors + REJECTED + " " : "") +
+    res.json({
+      msg:
+        (rejectedByErrors > 0 ? rejectedByErrors + REJECTED + " " : "") +
         (rejectedByDuplicates > 0
           ? rejectedByDuplicates + DUPLICATES + " "
           : "") +
-        (rowCount + ADDED)
-    );
+        rowCount +
+        ADDED,
+    });
 
     // For the 'books' table we have to fill secondary table 'copies' as well
     if (table === "books") {
