@@ -67,7 +67,7 @@ app.post("/bulk/:table", async (req, res) => {
     // Also must have non-zero copies field (at least one copy)
     else
       approvedPayload = payload.filter(
-        ({ title, author }) =>
+        ({ title, author, copies }) =>
           title &&
           author &&
           copies &&
@@ -105,15 +105,12 @@ app.post("/bulk/:table", async (req, res) => {
       .map((_, index) => `$${index + 1}`)
       .join(",");
     // Build SQL query
-    const query = `SELECT name FROM users WHERE ${checkField} IN (${placeholders})`;
+    const query = `SELECT ${checkField} FROM ${table} WHERE ${checkField} IN (${placeholders})`;
+    console.log(query);
     // Query for duplicates
-    // const { rows } = await sql.query(query, identifiers);
-    // // Return array of duplicate identifiers (names or titles)
-    // return rows.map((row) => row[checkField]);
-
-    const check = await sql.query(query, identifiers);
-    result = check.rows.map((row) => row[checkField]);
-    return result;
+    const { rows } = await sql.query(query, identifiers);
+    // Return array of duplicate identifiers (names or titles)
+    return rows.map((row) => row[checkField]);
   };
 
   // Gather identifiers
@@ -138,7 +135,8 @@ app.post("/bulk/:table", async (req, res) => {
           .map((_, index) => {
             // Books table has 3 field in payload
             const baseIndex = index * 3 + 1;
-            const rowPlaceholders = columns
+            const rowPlaceholders = new Array(3)
+              .fill(0)
               .map((_, i) => `$${baseIndex + i}`)
               .join(", ");
             return `(${rowPlaceholders})`;
@@ -146,9 +144,8 @@ app.post("/bulk/:table", async (req, res) => {
           .join(", ");
 
   // Build query
-  const query = `INSERT INTO users ${
-    table === "users" ? "(name)" : "(title, author, coverImage)"
-  } VALUES ${sqlPlaceholders}`;
+  const columns = table === "users" ? "(name)" : "(title, author, coverImage)";
+  const query = `INSERT INTO ${table} ${columns} VALUES ${sqlPlaceholders}`;
 
   // Collect query parameters
   const queryParameters =
