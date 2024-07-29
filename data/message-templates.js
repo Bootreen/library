@@ -1,14 +1,13 @@
 const MSG_TEMPLATES = {
-  INTRO: "Songs DB for the Radio Bootreen",
+  INTRO: "Library DB mini-project (c) Oleksii Butrin",
+  REJECTED: " records had invalid syntax and were automatically rejected.",
+  DUPLICATES:
+    " records already exist in database and were automatically rejected.",
   SERVER: "Server running on port",
-  REJECTED:
-    " records missed at least one mandatory property and were automatically rejected.",
-  EXIST: " records already exist in database and were automatically rejected.",
-  ADDED: " records were successfully added.",
-  ERR_TABLE: "Invalid table name",
-  ERR_QUERY: "Query syntax error, all records were rejected",
+  ERR_TABLE: "Invalid path or table name",
+  ERR_SYNTAX: "All records have failed syntax check, no new records were added",
+  ERR_DUPLICATES: "All valid records already exist, no new records were added",
   ERR_SERVER: "Internal Server Error",
-  ERR_DUPLICATES: "All records already exist",
   ERR_INSERT: "Error inserting records:",
 };
 
