@@ -92,7 +92,7 @@ app.post("/bulk/:table", async (req, res) => {
   if (table === "books")
     approvedPayload.forEach(({ coverImage }, i) => {
       approvedPayload[i].coverImage =
-        coverImage && typeof title === "string" ? coverImage : "";
+        coverImage && typeof coverImage === "string" ? coverImage : "";
     });
   // Count records, that was rejected by the syntax errors
   const rejectedByErrors = payload.length - approvedPayload.length;
@@ -172,7 +172,7 @@ app.post("/bulk/:table", async (req, res) => {
     // For the 'books' table we have to fill secondary table 'copies' as well
     if (table === "books") {
       const copiesPlaceholders = finalPayload
-        .map((_, index) => `($${index + i})`)
+        .map((_, index) => `($${index + 1})`)
         .join(", ");
       const copiesQuery = `INSERT INTO copies (bookId) VALUES ${copiesPlaceholders}`;
       const copiesParams = finalPayload
