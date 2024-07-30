@@ -1,4 +1,6 @@
 require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const { sql } = require("@vercel/postgres");
@@ -31,7 +33,14 @@ app.use(express.json());
 app.use(cors());
 
 app.get("/", (_, res) => {
-  res.json({ msg: INTRO });
+  const filePath = path.join("./data/api-docs.html");
+  fs.readFile(filePath, "utf8", (err, data) => {
+    if (err) {
+      res.status(500).send("Internal Server Error");
+    } else {
+      res.send(data);
+    }
+  });
 });
 
 // Show all users
@@ -45,14 +54,14 @@ app.get("/users", async (_, res) => {
 });
 
 // Show particular user, only numeric id is accepted
-app.get("/users/:id(\\d+)", async (req, res) => {
-  const { id } = req.params;
-  const query = `SELECT id, name FROM users WHERE user.id = ${id}`;
+app.get("/users/:userId(\\d+)", async (req, res) => {
+  const { userId } = req.params;
+  const query = `SELECT id, name FROM users WHERE id = ${userId}`;
   const { rows } = await sql.query(query);
   if (rows.length === 0) {
     return res.status(404).json({ error: ERR_USER_404 });
   }
-  res.json(rows);
+  res.json(rows[0]);
 });
 
 // Show all books
@@ -87,8 +96,8 @@ app.get("/books", async (_, res) => {
 });
 
 // Show particular book, only numeric id is accepted
-app.get("/books/:id(\\d+)", async (req, res) => {
-  const { id } = req.params;
+app.get("/books/:bookId(\\d+)", async (req, res) => {
+  const { bookId } = req.params;
   const query = `SELECT
       books.id,
       books.title,
@@ -104,7 +113,7 @@ app.get("/books/:id(\\d+)", async (req, res) => {
       books.id = $1
     GROUP BY
       books.id`;
-  const { rows } = await sql.query(query, [id]);
+  const { rows } = await sql.query(query, [bookId]);
   if (rows.length === 0) {
     return res.status(404).json({ error: ERR_BOOK_404 });
   }
@@ -115,7 +124,7 @@ app.get("/books/:id(\\d+)", async (req, res) => {
     delete Object.assign(record, { copiesInStock: record.copiesinstock })
       .copiesinstock;
   });
-  res.json(rows);
+  res.json(rows[0]);
 });
 
 // Renting books API endpoint
@@ -143,36 +152,34 @@ app.post("/books/:id(\\d+)/rent", async (req, res) => {
     const insertRentalQuery = `
       INSERT INTO rentals (userId, copyId, rentalDate)
       VALUES ($1, $2, CURRENT_TIMESTAMP)
-      RETURNING id`;
+      RETURNING copyId`;
     const { rows } = await sql.query(insertRentalQuery, [userId, copyId]);
 
-    res.status(201).json({ rentalId: rows[0].id });
+    res.status(201).json({ copyId: rows[0].copyid });
   } catch (error) {
     console.error(ERR_INSERT, error);
     res.status(500).json({ error: ERR_SERVER });
   }
 });
 
-// Delete rental record with provided bookId in url and userId in payload
+// Delete rental record with provided copyId in payload
 app.delete("/books/:id(\\d+)/rent", async (req, res) => {
-  const { id } = req.params;
-  const { userId } = req.body;
+  const { copyId } = req.body;
 
   try {
     // Check if the rental record exists
     const checkQuery = `
       SELECT rentals.id
       FROM rentals
-      INNER JOIN copies ON rentals.copyId = copies.id
-      WHERE copies.bookId = $1 AND rentals.userId = $2
+      WHERE rentals.copyId = $1
     `;
-    const { rows: rentalRows } = await sql.query(checkQuery, [id, userId]);
-    if (rentalRows.length === 0) {
+    const { rows } = await sql.query(checkQuery, [copyId]);
+    if (rows.length === 0) {
       return res.status(404).json({ error: NO_RENTALS });
     }
 
     // Delete the rental record
-    const rentalId = rentalRows[0].id;
+    const rentalId = rows[0].id;
     const deleteQuery = `
       DELETE FROM rentals
       WHERE id = $1`;

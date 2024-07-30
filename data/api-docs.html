@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Documentation</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1,
+      h2,
+      h3 {
+        color: #333;
+      }
+      h1 {
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 10px;
+      }
+      code {
+        background: #eee;
+        padding: 2px 4px;
+        border-radius: 4px;
+      }
+      pre {
+        background: #eee;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      .endpoint {
+        margin-bottom: 20px;
+      }
+      .endpoint h2 {
+        margin: 10px 0;
+      }
+      .endpoint code {
+        font-size: 90%;
+      }
+      .request-body,
+      .response {
+        margin: 10px 0;
+      }
+      .response {
+        background: #f9f9f9;
+        border-left: 5px solid #ddd;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .error {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>API Documentation</h1>
+
+      <section>
+        <h2>Overview</h2>
+        <p>
+          This API allows you to manage users, books, and rentals. It includes
+          endpoints for CRUD operations, renting books, and bulk insertion.
+        </p>
+      </section>
+
+      <section>
+        <h2>Endpoints</h2>
+
+        <!-- Root Documentation -->
+        <div class="endpoint">
+          <h2>Get API Documentation</h2>
+          <p><strong>URL:</strong> <code>/</code></p>
+          <p><strong>Method:</strong> GET</p>
+          <p><strong>Description:</strong> Serves the API documentation.</p>
+          <p><strong>Response:</strong></p>
+          <pre><code>HTML content of the API documentation.</code></pre>
+        </div>
+
+        <!-- Users Endpoints -->
+        <div class="endpoint">
+          <h2>List Users</h2>
+          <p><strong>URL:</strong> <code>/users</code></p>
+          <p><strong>Method:</strong> GET</p>
+          <p><strong>Description:</strong> Retrieve a list of all users.</p>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p>
+              <strong>200 OK:</strong> Array of user objects, each containing
+              <code>id</code> and <code>name</code>.
+            </p>
+            <p>
+              <strong>204 No Content:</strong> If no users are found. Response
+              message: <code>"No users found."</code>
+            </p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <h2>Get User by ID</h2>
+          <p><strong>URL:</strong> <code>/users/:userId</code></p>
+          <p><strong>Method:</strong> GET</p>
+          <p><strong>Description:</strong> Retrieve a specific user by ID.</p>
+          <p><strong>URL Params:</strong></p>
+          <ul>
+            <li><code>userId</code>: Numeric ID of the user.</li>
+          </ul>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p>
+              <strong>200 OK:</strong> User object with <code>id</code> and
+              <code>name</code>.
+            </p>
+            <p>
+              <strong>404 Not Found:</strong> If the user is not found. Response
+              message: <code>"User not found."</code>
+            </p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <h2>Add User</h2>
+          <p><strong>URL:</strong> <code>/users</code></p>
+          <p><strong>Method:</strong> POST</p>
+          <p><strong>Description:</strong> Add a new user.</p>
+          <p><strong>Request Body:</strong></p>
+          <pre><code>
+{
+  "name": "string"
+}
+                </code></pre>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p>
+              <strong>201 Created:</strong> New user object with
+              <code>id</code> and <code>name</code>.
+            </p>
+            <p>
+              <strong>400 Bad Request:</strong> If the request body is invalid.
+              Response message: <code>"Invalid syntax."</code>
+            </p>
+          </div>
+        </div>
+
+        <!-- Books Endpoints -->
+        <div class="endpoint">
+          <h2>List Books</h2>
+          <p><strong>URL:</strong> <code>/books</code></p>
+          <p><strong>Method:</strong> GET</p>
+          <p>
+            <strong>Description:</strong> Retrieve a list of all books with
+            their availability.
+          </p>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p>
+              <strong>200 OK:</strong> Array of book objects with
+              <code>id</code>, <code>title</code>, <code>author</code>,
+              <code>coverImage</code>, <code>totalCopies</code>, and
+              <code>copiesInStock</code>.
+            </p>
+            <p>
+              <strong>204 No Content:</strong> If no books are found. Response
+              message: <code>"No books found."</code>
+            </p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <h2>Get Book by ID</h2>
+          <p><strong>URL:</strong> <code>/books/:bookId</code></p>
+          <p><strong>Method:</strong> GET</p>
+          <p><strong>Description:</strong> Retrieve a specific book by ID.</p>
+          <p><strong>URL Params:</strong></p>
+          <ul>
+            <li><code>bookId</code>: Numeric ID of the book.</li>
+          </ul>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p>
+              <strong>200 OK:</strong> Book object with <code>id</code>,
+              <code>title</code>, <code>author</code>, <code>coverImage</code>,
+              <code>totalCopies</code>, and <code>copiesInStock</code>.
+            </p>
+            <p>
+              <strong>404 Not Found:</strong> If the book is not found. Response
+              message: <code>"Book not found."</code>
+            </p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <h2>Rent Book</h2>
+          <p><strong>URL:</strong> <code>/books/:id/rent</code></p>
+          <p><strong>Method:</strong> POST</p>
+          <p><strong>Description:</strong> Rent a book by ID for a user.</p>
+          <p><strong>URL Params:</strong></p>
+          <ul>
+            <li><code>id</code>: Numeric ID of the book.</li>
+          </ul>
+          <p><strong>Request Body:</strong></p>
+          <pre><code>
+{
+  "userId": "numeric"
+}
+                </code></pre>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p>
+              <strong>201 Created:</strong> Rental object with
+              <code>copyId</code>.
+            </p>
+            <p>
+              <strong>400 Bad Request:</strong> If no copies are available.
+              Response message: <code>"No available copies."</code>
+            </p>
+            <p>
+              <strong>500 Internal Server Error:</strong> If there's a server
+              error. Response message: <code>"Server error."</code>
+            </p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <h2>Delete Rental</h2>
+          <p><strong>URL:</strong> <code>/books/:id/rent</code></p>
+          <p><strong>Method:</strong> DELETE</p>
+          <p>
+            <strong>Description:</strong> Delete a rental record by copy ID.
+          </p>
+          <p><strong>Request Body:</strong></p>
+          <pre><code>
+{
+  "copyId": "numeric"
+}
+                </code></pre>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p><strong>200 OK:</strong> Success message.</p>
+            <p>
+              <strong>404 Not Found:</strong> If the rental record is not found.
+              Response message: <code>"No rentals found."</code>
+            </p>
+            <p>
+              <strong>500 Internal Server Error:</strong> If there's a server
+              error. Response message: <code>"Server error."</code>
+            </p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <h2>List Rentals by User</h2>
+          <p><strong>URL:</strong> <code>/users/:userId/rentals</code></p>
+          <p><strong>Method:</strong> GET</p>
+          <p>
+            <strong>Description:</strong> Retrieve all rentals for a specific
+            user.
+          </p>
+          <p><strong>URL Params:</strong></p>
+          <ul>
+            <li><code>userId</code>: Numeric ID of the user.</li>
+          </ul>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p>
+              <strong>200 OK:</strong> Array of rental objects with
+              <code>copyId</code>, <code>rentalDate</code>, <code>title</code>,
+              and <code>bookId</code>.
+            </p>
+            <p>
+              <strong>404 Not Found:</strong> If no rentals are found. Response
+              message: <code>"No rentals found."</code>
+            </p>
+            <p>
+              <strong>500 Internal Server Error:</strong> If there's a server
+              error. Response message: <code>"Server error."</code>
+            </p>
+          </div>
+        </div>
+
+        <!-- Bulk Operations Endpoints -->
+        <div class="endpoint">
+          <h2>Bulk Insert Users or Books</h2>
+          <p><strong>URL:</strong> <code>/bulk/:table</code></p>
+          <p><strong>Method:</strong> POST</p>
+          <p>
+            <strong>Description:</strong> Insert multiple users or books in
+            bulk.
+          </p>
+          <p><strong>URL Params:</strong></p>
+          <ul>
+            <li>
+              <code>table</code>: Either <code>users</code> or
+              <code>books</code>.
+            </li>
+          </ul>
+          <p><strong>Request Body:</strong></p>
+          <pre><code>
+{
+  "payload": [
+    {
+      "name": "string" // For users
+    },
+    {
+      "title": "string",
+      "author": "string",
+      "coverImage": "string",
+      "copies": "number" // For books
+    }
+  ]
+}
+                </code></pre>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p>
+              <strong>201 Created:</strong> Success message with details about
+              rejected records and added records.
+            </p>
+            <p>
+              <strong>400 Bad Request:</strong> If any records have invalid
+              syntax or duplicates. Response message:
+              <code>"Invalid syntax."</code> or <code>"Duplicates found."</code>
+            </p>
+            <p>
+              <strong>500 Internal Server Error:</strong> If there's a server
+              error. Response message: <code>"Server error."</code>
+            </p>
+          </div>
+        </div>
+
+        <!-- Fallback Route -->
+        <div class="endpoint">
+          <h2>Fallback Route</h2>
+          <p><strong>URL:</strong> <code>*</code></p>
+          <p><strong>Method:</strong> ALL</p>
+          <p><strong>Description:</strong> Handles undefined routes.</p>
+          <p><strong>Response:</strong></p>
+          <div class="response">
+            <p>
+              <strong>404 Not Found:</strong> Response message:
+              <code>"Not found."</code>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Message Templates</h2>
+        <p>
+          <strong>INTRO:</strong> <code>"Welcome to the Book Rental API."</code>
+        </p>
+        <p><strong>SERVER:</strong> <code>"Server is running on port"</code></p>
+        <p>
+          <strong>REJECTED:</strong>
+          <code>" records rejected due to syntax errors."</code>
+        </p>
+        <p>
+          <strong>DUPLICATES:</strong>
+          <code>" records rejected due to duplicates."</code>
+        </p>
+        <p>
+          <strong>DELETED:</strong> <code>"Record successfully deleted."</code>
+        </p>
+        <p><strong>NO_USERS:</strong> <code>"No users found."</code></p>
+        <p><strong>NO_BOOKS:</strong> <code>"No books found."</code></p>
+        <p><strong>NO_RENTALS:</strong> <code>"No rentals found."</code></p>
+        <p>
+          <strong>ADDED:</strong> <code>" records added successfully."</code>
+        </p>
+        <p>
+          <strong>ERR_TABLE:</strong> <code>"Invalid table specified."</code>
+        </p>
+        <p>
+          <strong>ERR_SYNTAX:</strong>
+          <code>"Invalid syntax in the request."</code>
+        </p>
+        <p>
+          <strong>ERR_DUPLICATES:</strong>
+          <code>"Duplicates found in the request."</code>
+        </p>
+        <p>
+          <strong>ERR_SERVER:</strong>
+          <code>"An internal server error occurred."</code>
+        </p>
+        <p>
+          <strong>ERR_INSERT:</strong>
+          <code>"Failed to insert record into the database."</code>
+        </p>
+        <p>
+          <strong>ERR_NOT_FOUND:</strong> <code>"Resource not found."</code>
+        </p>
+        <p><strong>ERR_USER_404:</strong> <code>"User not found."</code></p>
+        <p><strong>ERR_BOOK_404:</strong> <code>"Book not found."</code></p>
+        <p>
+          <strong>ERR_NO_COPY:</strong>
+          <code>"No available copies left for the book."</code>
+        </p>
+      </section>
+    </div>
+  </body>
+</html>
