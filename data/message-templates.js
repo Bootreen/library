@@ -1,5 +1,4 @@
 const MSG_TEMPLATES = {
-  INTRO: "Library DB mini-project (c) Oleksii Butrin",
   SERVER: "Server running on port",
   ADDED: " records were successfully added.",
   REJECTED: " records have invalid syntax and were automatically rejected.",

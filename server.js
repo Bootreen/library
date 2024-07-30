@@ -7,7 +7,6 @@ const { sql } = require("@vercel/postgres");
 const MSG_TEMPLATES = require("./data/message-templates");
 
 const {
-  INTRO,
   SERVER,
   REJECTED,
   DUPLICATES,
