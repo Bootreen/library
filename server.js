@@ -6,9 +6,10 @@ const MSG_TEMPLATES = require("./data/message-templates");
 
 const {
   INTRO,
+  SERVER,
   REJECTED,
   DUPLICATES,
-  SERVER,
+  ADDED,
   ERR_TABLE,
   ERR_SYNTAX,
   ERR_DUPLICATES,
@@ -66,7 +67,7 @@ app.post("/bulk/:table", async (req, res) => {
     // Also must have non-zero copies field (at least one copy)
     else
       approvedPayload = payload.filter(
-        ({ title, author }) =>
+        ({ title, author, copies }) =>
           title &&
           author &&
           copies &&
@@ -91,7 +92,7 @@ app.post("/bulk/:table", async (req, res) => {
   if (table === "books")
     approvedPayload.forEach(({ coverImage }, i) => {
       approvedPayload[i].coverImage =
-        coverImage && typeof title === "string" ? coverImage : "";
+        coverImage && typeof coverImage === "string" ? coverImage : "";
     });
   // Count records, that was rejected by the syntax errors
   const rejectedByErrors = payload.length - approvedPayload.length;
@@ -104,7 +105,7 @@ app.post("/bulk/:table", async (req, res) => {
       .map((_, index) => `$${index + 1}`)
       .join(",");
     // Build SQL query
-    const query = `SELECT name FROM users WHERE ${checkField} IN (${placeholders})`;
+    const query = `SELECT ${checkField} FROM ${table} WHERE ${checkField} IN (${placeholders})`;
     // Query for duplicates
     const { rows } = await sql.query(query, identifiers);
     // Return array of duplicate identifiers (names or titles)
@@ -114,8 +115,9 @@ app.post("/bulk/:table", async (req, res) => {
   // Gather identifiers
   const identifiers = approvedPayload.map((record) => record[checkField]);
   // Check for the duplicates and filter them out
-  const finalPayload = approvedPayload.filter((record) =>
-    checkDuplicates(identifiers).includes(record[checkField])
+  const duplicates = await checkDuplicates(identifiers);
+  const finalPayload = approvedPayload.filter(
+    (record) => !duplicates.includes(record[checkField])
   );
   // All valid records already exist
   if (finalPayload.length === 0) {
@@ -132,7 +134,8 @@ app.post("/bulk/:table", async (req, res) => {
           .map((_, index) => {
             // Books table has 3 field in payload
             const baseIndex = index * 3 + 1;
-            const rowPlaceholders = columns
+            const rowPlaceholders = new Array(3)
+              .fill(0)
               .map((_, i) => `$${baseIndex + i}`)
               .join(", ");
             return `(${rowPlaceholders})`;
@@ -140,9 +143,10 @@ app.post("/bulk/:table", async (req, res) => {
           .join(", ");
 
   // Build query
-  const query = `INSERT INTO users ${
-    table === "users" ? "(name)" : "(title, author, coverImage)"
-  } VALUES ${sqlPlaceholders}`;
+  const columns = table === "users" ? "(name)" : "(title, author, coverImage)";
+  // We need to return the book id because payload knows nothing about id
+  const returningData = table === "books" ? "RETURNING id" : "";
+  const query = `INSERT INTO ${table} ${columns} VALUES ${sqlPlaceholders} ${returningData}`;
 
   // Collect query parameters
   const queryParameters =
@@ -154,27 +158,35 @@ app.post("/bulk/:table", async (req, res) => {
 
   // Insert into one of two tables (users or books), depending on the query
   try {
-    const { rowCount } = await sql.query(query, queryParameters);
+    const { rows, rowCount } = await sql.query(query, queryParameters);
+    // For the 'books' table we have to fill secondary table 'copies' as well
+    if (table === "books") {
+      for (let i = 0; i < finalPayload.length; i++) {
+        // Take book id from SQL INSERT RETURNING
+        const { id } = rows[i];
+        // Take copies number from the payload itself
+        const { copies } = finalPayload[i];
+        // Insert copies into 'copies' table
+        const copyValues = new Array(copies)
+          .fill("")
+          .map((_, index) => `($${index + 1})`)
+          .join(",");
+        const copiesQuery = `INSERT INTO copies (bookId) VALUES ${copyValues}`;
+        const copyParams = new Array(copies).fill(id);
+        await sql.query(copiesQuery, copyParams);
+      }
+    }
+
     // Report insertion result
-    res.json(
-      (rejectedByErrors > 0 ? rejectedByErrors + REJECTED + " " : "") +
+    res.json({
+      msg:
+        (rejectedByErrors > 0 ? rejectedByErrors + REJECTED + " " : "") +
         (rejectedByDuplicates > 0
           ? rejectedByDuplicates + DUPLICATES + " "
           : "") +
-        (rowCount + ADDED)
-    );
-
-    // For the 'books' table we have to fill secondary table 'copies' as well
-    if (table === "books") {
-      const copiesPlaceholders = finalPayload
-        .map((_, index) => `($${index + i})`)
-        .join(", ");
-      const copiesQuery = `INSERT INTO copies (bookId) VALUES ${copiesPlaceholders}`;
-      const copiesParams = finalPayload
-        .map(({ id, copies }) => new Array(copies).fill(id))
-        .flat();
-      await sql.query(copiesQuery, copiesParams);
-    }
+        rowCount +
+        ADDED,
+    });
   } catch (error) {
     console.error(ERR_INSERT, error);
     res.status(500).json({ error: ERR_SERVER });
