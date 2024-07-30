@@ -222,6 +222,42 @@ app.get("/users/:userId(\\d+)/rentals", async (req, res) => {
   }
 });
 
+// Add a single user
+app.post("/users", async (req, res) => {
+  const { name } = req.body;
+
+  // Check for syntax errors
+  if (!name || typeof name !== "string" || name.trim() === "") {
+    return res.status(400).json({ error: ERR_SYNTAX });
+  }
+
+  try {
+    // Check for duplicates
+    const duplicateCheckQuery = `SELECT id, name FROM users WHERE name = $1`;
+    const { rows: duplicateRows } = await sql.query(duplicateCheckQuery, [
+      name,
+    ]);
+
+    if (duplicateRows.length > 0) {
+      // User already exists, return the existing user
+      return res.status(200).json(duplicateRows[0]);
+    }
+
+    // Insert new user
+    const insertUserQuery = `
+      INSERT INTO users (name)
+      VALUES ($1)
+      RETURNING id, name
+    `;
+    const { rows } = await sql.query(insertUserQuery, [name]);
+
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error(ERR_SERVER, error);
+    res.status(500).json({ error: ERR_SERVER });
+  }
+});
+
 // Bulk insert new users and books API endpoint
 app.post("/bulk/:table", async (req, res) => {
   const { table } = req.params;
@@ -236,7 +272,7 @@ app.post("/bulk/:table", async (req, res) => {
     if (table === "users")
       // Users payload must have non empty 'name' field (type sting)
       approvedPayload = payload.filter(
-        ({ name }) => name && typeof name === "string" && name !== ""
+        ({ name }) => name && typeof name === "string" && name.trim() !== ""
       );
     // Books payload must have non empty 'title' and 'author' fields (type sting)
     // Also must have non-zero copies field (at least one copy)
@@ -249,8 +285,8 @@ app.post("/bulk/:table", async (req, res) => {
           typeof title === "string" &&
           typeof author === "string" &&
           typeof copies === "number" &&
-          title !== "" &&
-          author !== "" &&
+          title.trim() !== "" &&
+          author.trim() !== "" &&
           copies > 0
       );
     return approvedPayload;
