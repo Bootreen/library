@@ -16,6 +16,10 @@ const {
   ERR_SERVER,
   ERR_INSERT,
   ERR_NOT_FOUND,
+  NO_USERS,
+  NO_BOOKS,
+  ERR_USER_404,
+  ERR_BOOK_404,
 } = MSG_TEMPLATES;
 
 const app = express();
@@ -27,46 +31,87 @@ app.get("/", (_, res) => {
   res.json({ msg: INTRO });
 });
 
-// Show all users or books
-app.get("/:table", async (req, res) => {
-  const { table } = req.params;
-
-  if (!["users", "books"].includes(table)) {
-    return res.status(400).json({ error: ERR_TABLE });
-  }
-
-  const query =
-    table === "users"
-      ? `SELECT id, name FROM users`
-      : `SELECT
-        books.id,
-        books.title,
-        books.author,
-        books.coverImage,
-        COUNT(copies.id) as totalCopies,
-        COUNT(copies.id) - COUNT(rentals.id) as copiesInStock
-      FROM
-        books
-        LEFT JOIN copies ON books.id = copies.bookId
-        LEFT JOIN rentals ON copies.id = rentals.copyId
-      GROUP BY
-        books.id
-      ORDER BY
-        books.id`;
+// Show all users
+app.get("/users", async (_, res) => {
+  const query = `SELECT id, name FROM users`;
   const { rows } = await sql.query(query);
+  if (rows.length === 0) {
+    return res.status(204).json({ msg: NO_USERS });
+  }
   res.json(rows);
 });
 
-// Show particular user or book, only numeric id is accepted
-app.get("/:table/:id(\\d+)", async (req, res) => {
-  const { table, id } = req.params;
-
-  if (!["users", "books"].includes(table)) {
-    return res.status(400).json({ error: ERR_TABLE });
-  }
-
-  const query = `SELECT * FROM ${table} WHERE ${table}.id = ${id}`;
+// Show particular user, only numeric id is accepted
+app.get("/users/:id(\\d+)", async (req, res) => {
+  const { id } = req.params;
+  const query = `SELECT id, name FROM users WHERE user.id = ${id}`;
   const { rows } = await sql.query(query);
+  if (rows.length === 0) {
+    return res.status(404).json({ error: ERR_USER_404 });
+  }
+  res.json(rows);
+});
+
+// Show all books
+app.get("/books", async (_, res) => {
+  const query = `SELECT
+      books.id,
+      books.title,
+      books.author,
+      books.coverImage,
+      COUNT(copies.id) as totalCopies,
+      COUNT(copies.id) - COUNT(rentals.id) as copiesInStock
+    FROM
+      books
+      LEFT JOIN copies ON books.id = copies.bookId
+      LEFT JOIN rentals ON copies.id = rentals.copyId
+    GROUP BY
+      books.id
+    ORDER BY
+      books.id`;
+  const { rows } = await sql.query(query);
+  if (rows.length === 0) {
+    return res.status(204).json({ msg: NO_BOOKS });
+  }
+  // Camelcase for copies count keys
+  rows.forEach((record) => {
+    delete Object.assign(record, { totalCopies: record.totalcopies })
+      .totalcopies;
+    delete Object.assign(record, { copiesInStock: record.copiesinstock })
+      .copiesinstock;
+  });
+  res.json(rows);
+});
+
+// Show particular book, only numeric id is accepted
+app.get("/books/:id(\\d+)", async (req, res) => {
+  const { id } = req.params;
+  const query = `SELECT
+      books.id,
+      books.title,
+      books.author,
+      books.coverImage,
+      COUNT(copies.id) as totalCopies,
+      COUNT(copies.id) - COUNT(rentals.id) as copiesInStock
+    FROM
+      books
+      LEFT JOIN copies ON books.id = copies.bookId
+      LEFT JOIN rentals ON copies.id = rentals.copyId
+    WHERE
+      books.id = $1
+    GROUP BY
+      books.id`;
+  const { rows } = await sql.query(query, [id]);
+  if (rows.length === 0) {
+    return res.status(404).json({ error: ERR_BOOK_404 });
+  }
+  // Camelcase for copies count keys
+  rows.forEach((record) => {
+    delete Object.assign(record, { totalCopies: record.totalcopies })
+      .totalcopies;
+    delete Object.assign(record, { copiesInStock: record.copiesinstock })
+      .copiesinstock;
+  });
   res.json(rows);
 });
 
