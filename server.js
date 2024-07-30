@@ -9,6 +9,9 @@ const {
   SERVER,
   REJECTED,
   DUPLICATES,
+  NO_USERS,
+  NO_BOOKS,
+  NO_RENTALS,
   ADDED,
   ERR_TABLE,
   ERR_SYNTAX,
@@ -16,15 +19,14 @@ const {
   ERR_SERVER,
   ERR_INSERT,
   ERR_NOT_FOUND,
-  NO_USERS,
-  NO_BOOKS,
   ERR_USER_404,
   ERR_BOOK_404,
+  ERR_NO_COPY,
 } = MSG_TEMPLATES;
 
 const app = express();
 app.use(express.json());
-// Enable CORS for all routes
+// Enable CORS for all external domains
 app.use(cors());
 
 app.get("/", (_, res) => {
@@ -115,7 +117,79 @@ app.get("/books/:id(\\d+)", async (req, res) => {
   res.json(rows);
 });
 
-// Bulk insert new users and books
+// Renting books API endpoint
+app.post("/books/:id(\\d+)/rent", async (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  try {
+    // Find an available copy
+    const findCopyQuery = `
+      SELECT copies.id
+      FROM copies
+      LEFT JOIN rentals ON copies.id = rentals.copyId
+      WHERE copies.bookId = $1 AND rentals.copyId IS NULL
+      LIMIT 1`;
+    const { rows: availableCopies } = await sql.query(findCopyQuery, [id]);
+
+    // No available copies left
+    if (availableCopies.length === 0) {
+      return res.status(400).json({ error: ERR_NO_COPY });
+    }
+    const copyId = availableCopies[0].id;
+
+    // Insert the rental record
+    const insertRentalQuery = `
+      INSERT INTO rentals (userId, copyId, rentalDate)
+      VALUES ($1, $2, CURRENT_TIMESTAMP)
+      RETURNING id`;
+    const { rows } = await sql.query(insertRentalQuery, [userId, copyId]);
+
+    res.status(201).json({ rentalId: rows[0].id });
+  } catch (error) {
+    console.error(ERR_INSERT, error);
+    res.status(500).json({ error: ERR_SERVER });
+  }
+});
+
+// Show all rentals by user
+app.get("/users/:userId(\\d+)/rentals", async (req, res) => {
+  const { userId } = req.params;
+
+  // Check if user exists
+  const userCheckQuery = `SELECT id FROM users WHERE id = $1`;
+  const { rows: userRows } = await sql.query(userCheckQuery, [userId]);
+  if (userRows.length === 0) {
+    return res.status(404).json({ error: ERR_USER_404 });
+  }
+
+  try {
+    const query = `SELECT
+        copyId,
+        rentalDate,
+        books.title as "title",
+        books.id as "bookId"
+      FROM
+        rentals
+        INNER JOIN copies ON rentals.copyId = copies.id
+        INNER JOIN books ON copies.bookId = books.id
+      WHERE
+        rentals.userId = $1
+      ORDER BY
+        rentals.rentalDate DESC`;
+
+    const { rows } = await sql.query(query, [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: NO_RENTALS });
+    }
+    res.json(rows);
+  } catch (error) {
+    console.error(ERR_SERVER, error);
+    res.status(500).json({ error: ERR_SERVER });
+  }
+});
+
+// Bulk insert new users and books API endpoint
 app.post("/bulk/:table", async (req, res) => {
   const { table } = req.params;
   const { payload } = req.body;
@@ -248,7 +322,7 @@ app.post("/bulk/:table", async (req, res) => {
     }
 
     // Report insertion result
-    res.json({
+    res.status(201).json({
       msg:
         (rejectedByErrors > 0 ? rejectedByErrors + REJECTED + " " : "") +
         (rejectedByDuplicates > 0
