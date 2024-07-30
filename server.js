@@ -10,11 +10,12 @@ const {
   SERVER,
   REJECTED,
   DUPLICATES,
+  ADDED,
   DELETED,
   NO_USERS,
   NO_BOOKS,
-  NO_RENTALS,
-  ADDED,
+  ERR_NOT_RENTED,
+  ERR_NO_RENTALS,
   ERR_TABLE,
   ERR_SYNTAX,
   ERR_DUPLICATES,
@@ -32,10 +33,12 @@ app.use(express.json());
 app.use(cors());
 
 app.get("/", (_, res) => {
+  // Define path for the HTML-file with API DOCs
   const filePath = path.join("./data/api-docs.html");
+  // Read file via node file system and send it as result
   fs.readFile(filePath, "utf8", (err, data) => {
     if (err) {
-      res.status(500).send("Internal Server Error");
+      res.status(500).json(ERR_SERVER);
     } else {
       res.send(data);
     }
@@ -46,6 +49,8 @@ app.get("/", (_, res) => {
 app.get("/users", async (_, res) => {
   const query = `SELECT id, name FROM users`;
   const { rows } = await sql.query(query);
+  // From the formal point of view HTTP status 204 (No Content)
+  // is not an error, it just indicates that this table is empty
   if (rows.length === 0) {
     return res.status(204).json({ msg: NO_USERS });
   }
@@ -69,9 +74,9 @@ app.get("/books", async (_, res) => {
       books.id,
       books.title,
       books.author,
-      books.coverImage,
-      COUNT(copies.id) as totalCopies,
-      COUNT(copies.id) - COUNT(rentals.id) as copiesInStock
+      books.coverImage as "coverImage",
+      COUNT(copies.id) as "totalCopies",
+      COUNT(copies.id) - COUNT(rentals.id) as "copiesInStock"
     FROM
       books
       LEFT JOIN copies ON books.id = copies.bookId
@@ -84,13 +89,6 @@ app.get("/books", async (_, res) => {
   if (rows.length === 0) {
     return res.status(204).json({ msg: NO_BOOKS });
   }
-  // Camelcase for copies count keys
-  rows.forEach((record) => {
-    delete Object.assign(record, { totalCopies: record.totalcopies })
-      .totalcopies;
-    delete Object.assign(record, { copiesInStock: record.copiesinstock })
-      .copiesinstock;
-  });
   res.json(rows);
 });
 
@@ -101,9 +99,9 @@ app.get("/books/:bookId(\\d+)", async (req, res) => {
       books.id,
       books.title,
       books.author,
-      books.coverImage,
-      COUNT(copies.id) as totalCopies,
-      COUNT(copies.id) - COUNT(rentals.id) as copiesInStock
+      books.coverImage as "coverImage",
+      COUNT(copies.id) as "totalCopies",
+      COUNT(copies.id) - COUNT(rentals.id) as "copiesInStock"
     FROM
       books
       LEFT JOIN copies ON books.id = copies.bookId
@@ -116,13 +114,6 @@ app.get("/books/:bookId(\\d+)", async (req, res) => {
   if (rows.length === 0) {
     return res.status(404).json({ error: ERR_BOOK_404 });
   }
-  // Camelcase for copies count keys
-  rows.forEach((record) => {
-    delete Object.assign(record, { totalCopies: record.totalcopies })
-      .totalcopies;
-    delete Object.assign(record, { copiesInStock: record.copiesinstock })
-      .copiesinstock;
-  });
   res.json(rows[0]);
 });
 
@@ -174,7 +165,7 @@ app.delete("/books/:id(\\d+)/rent", async (req, res) => {
     `;
     const { rows } = await sql.query(checkQuery, [copyId]);
     if (rows.length === 0) {
-      return res.status(404).json({ error: NO_RENTALS });
+      return res.status(404).json({ error: ERR_NOT_RENTED });
     }
 
     // Delete the rental record
@@ -204,8 +195,8 @@ app.get("/users/:userId(\\d+)/rentals", async (req, res) => {
 
   try {
     const query = `SELECT
-        copyId,
-        rentalDate,
+        copyId as "copyId",
+        rentalDate as "rentalDate",
         books.title as "title",
         books.id as "bookId"
       FROM
@@ -219,7 +210,7 @@ app.get("/users/:userId(\\d+)/rentals", async (req, res) => {
 
     const { rows } = await sql.query(query, [userId]);
     if (rows.length === 0) {
-      return res.status(404).json({ error: NO_RENTALS });
+      return res.status(404).json({ error: ERR_NO_RENTALS });
     }
     res.json(rows);
   } catch (error) {
