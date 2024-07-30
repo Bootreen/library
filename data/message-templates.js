@@ -5,9 +5,10 @@ const MSG_TEMPLATES = {
   REJECTED: " records have invalid syntax and were automatically rejected.",
   DUPLICATES:
     " records already exist in database and were automatically rejected.",
+  DELETED: `Rental record deleted successfully.`,
   NO_USERS: "There're no users in database",
   NO_BOOKS: "There're no books in database",
-  NO_RENTALS: "This user didn't rent any book",
+  NO_RENTALS: "This user didn't rent this book",
   ERR_TABLE: "Invalid path or table name",
   ERR_SYNTAX: "All records have failed syntax check, no new records were added",
   ERR_DUPLICATES: "All valid records already exist, no new records were added",

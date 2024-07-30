@@ -9,6 +9,7 @@ const {
   SERVER,
   REJECTED,
   DUPLICATES,
+  DELETED,
   NO_USERS,
   NO_BOOKS,
   NO_RENTALS,
@@ -148,6 +149,38 @@ app.post("/books/:id(\\d+)/rent", async (req, res) => {
     res.status(201).json({ rentalId: rows[0].id });
   } catch (error) {
     console.error(ERR_INSERT, error);
+    res.status(500).json({ error: ERR_SERVER });
+  }
+});
+
+// Delete rental record with provided bookId in url and userId in payload
+app.delete("/books/:id(\\d+)/rent", async (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  try {
+    // Check if the rental record exists
+    const checkQuery = `
+      SELECT rentals.id
+      FROM rentals
+      INNER JOIN copies ON rentals.copyId = copies.id
+      WHERE copies.bookId = $1 AND rentals.userId = $2
+    `;
+    const { rows: rentalRows } = await sql.query(checkQuery, [id, userId]);
+    if (rentalRows.length === 0) {
+      return res.status(404).json({ error: NO_RENTALS });
+    }
+
+    // Delete the rental record
+    const rentalId = rentalRows[0].id;
+    const deleteQuery = `
+      DELETE FROM rentals
+      WHERE id = $1`;
+    await sql.query(deleteQuery, [rentalId]);
+
+    res.status(200).json({ msg: DELETED });
+  } catch (error) {
+    console.error(ERR_SERVER, error);
     res.status(500).json({ error: ERR_SERVER });
   }
 });
