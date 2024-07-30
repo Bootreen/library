@@ -15,6 +15,7 @@ const {
   ERR_DUPLICATES,
   ERR_SERVER,
   ERR_INSERT,
+  ERR_NOT_FOUND,
 } = MSG_TEMPLATES;
 
 const app = express();
@@ -26,28 +27,50 @@ app.get("/", (_, res) => {
   res.json({ msg: INTRO });
 });
 
-app.get("/users", async (_, res) => {
-  const { rows } = await sql`SELECT * FROM users`;
+// Show all users or books
+app.get("/:table", async (req, res) => {
+  const { table } = req.params;
+
+  if (!["users", "books"].includes(table)) {
+    return res.status(400).json({ error: ERR_TABLE });
+  }
+
+  const query =
+    table === "users"
+      ? `SELECT id, name FROM users`
+      : `SELECT
+        books.id,
+        books.title,
+        books.author,
+        books.coverImage,
+        COUNT(copies.id) as totalCopies,
+        COUNT(copies.id) - COUNT(rentals.id) as copiesInStock
+      FROM
+        books
+        LEFT JOIN copies ON books.id = copies.bookId
+        LEFT JOIN rentals ON copies.id = rentals.copyId
+      GROUP BY
+        books.id
+      ORDER BY
+        books.id`;
+  const { rows } = await sql.query(query);
   res.json(rows);
 });
 
-app.get("/users/:id", async (req, res) => {
-  const { id } = req.params;
-  const { rows } = await sql`SELECT * FROM users WHERE users.id = ${id} `;
+// Show particular user or book, only numeric id is accepted
+app.get("/:table/:id(\\d+)", async (req, res) => {
+  const { table, id } = req.params;
+
+  if (!["users", "books"].includes(table)) {
+    return res.status(400).json({ error: ERR_TABLE });
+  }
+
+  const query = `SELECT * FROM ${table} WHERE ${table}.id = ${id}`;
+  const { rows } = await sql.query(query);
   res.json(rows);
 });
 
-app.get("/books", async (_, res) => {
-  const { rows } = await sql`SELECT * FROM books`;
-  res.json(rows);
-});
-
-app.get("/books/:id", async (req, res) => {
-  const { id } = req.params;
-  const { rows } = await sql`SELECT * FROM books WHERE books.id = ${id}`;
-  res.json(rows);
-});
-
+// Bulk insert new users and books
 app.post("/bulk/:table", async (req, res) => {
   const { table } = req.params;
   const { payload } = req.body;
@@ -133,6 +156,8 @@ app.post("/bulk/:table", async (req, res) => {
       : finalPayload
           .map((_, index) => {
             // Books table has 3 field in payload
+            // We use this number as index multiplier
+            // And rowPlaceholders array length
             const baseIndex = index * 3 + 1;
             const rowPlaceholders = new Array(3)
               .fill(0)
@@ -144,7 +169,7 @@ app.post("/bulk/:table", async (req, res) => {
 
   // Build query
   const columns = table === "users" ? "(name)" : "(title, author, coverImage)";
-  // We need to return the book id because payload knows nothing about id
+  // We need to return the book id because payload "knows" nothing about id
   const returningData = table === "books" ? "RETURNING id" : "";
   const query = `INSERT INTO ${table} ${columns} VALUES ${sqlPlaceholders} ${returningData}`;
 
@@ -191,6 +216,10 @@ app.post("/bulk/:table", async (req, res) => {
     console.error(ERR_INSERT, error);
     res.status(500).json({ error: ERR_SERVER });
   }
+});
+
+app.all("*", (_, res) => {
+  res.status(404).json({ error: ERR_NOT_FOUND });
 });
 
 const port = process.env.PORT || 3000;

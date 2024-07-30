@@ -9,7 +9,8 @@ const MSG_TEMPLATES = {
   ERR_SYNTAX: "All records have failed syntax check, no new records were added",
   ERR_DUPLICATES: "All valid records already exist, no new records were added",
   ERR_SERVER: "Internal Server Error",
-  ERR_INSERT: "Error inserting records:",
+  ERR_INSERT: "Error inserting records",
+  ERR_NOT_FOUND: "Error 404: path not found",
 };
 
 module.exports = MSG_TEMPLATES;
