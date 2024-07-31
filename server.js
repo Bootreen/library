@@ -60,8 +60,8 @@ app.get("/users", async (_, res) => {
 // Show particular user, only numeric id is accepted
 app.get("/users/:userId(\\d+)", async (req, res) => {
   const { userId } = req.params;
-  const query = `SELECT id, name FROM users WHERE id = ${userId}`;
-  const { rows } = await sql.query(query);
+  const query = `SELECT id, name FROM users WHERE id = $1`;
+  const { rows } = await sql.query(query, [userId]);
   if (rows.length === 0) {
     return res.status(404).json({ error: ERR_USER_404 });
   }
@@ -175,7 +175,7 @@ app.delete("/books/:id(\\d+)/rent", async (req, res) => {
       WHERE id = $1`;
     await sql.query(deleteQuery, [rentalId]);
 
-    res.status(200).json({ msg: DELETED });
+    res.status(200).json({ msg: `Rental with copy id ${copyId} ${DELETED}` });
   } catch (error) {
     console.error(ERR_SERVER, error);
     res.status(500).json({ error: ERR_SERVER });
@@ -249,6 +249,66 @@ app.post("/users", async (req, res) => {
     const { rows } = await sql.query(insertUserQuery, [name]);
 
     res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error(ERR_SERVER, error);
+    res.status(500).json({ error: ERR_SERVER });
+  }
+});
+
+// Edit user info
+app.patch("/users/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { name } = req.body;
+
+  const query = `SELECT id, name FROM users WHERE id = $1`;
+  const { rows } = await sql.query(query, [userId]);
+  if (rows.length === 0) {
+    return res.status(404).json({ error: ERR_USER_404 });
+  }
+
+  // Check for syntax errors
+  if (!name || typeof name !== "string" || name.trim() === "") {
+    return res.status(400).json({ error: ERR_SYNTAX });
+  }
+
+  try {
+    // Update user name
+    const patchUserQuery = `
+      UPDATE users
+      SET name = $1
+      WHERE id = $2
+      RETURNING id, name
+    `;
+    const { rows: updatedRows } = await sql.query(patchUserQuery, [
+      name,
+      userId,
+    ]);
+
+    res.status(200).json(updatedRows[0]);
+  } catch (error) {
+    console.error(ERR_SERVER, error);
+    res.status(500).json({ error: ERR_SERVER });
+  }
+});
+
+// Delete user
+app.delete("/users/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  const query = `SELECT id, name FROM users WHERE id = $1`;
+  const { rows } = await sql.query(query, [userId]);
+  if (rows.length === 0) {
+    return res.status(404).json({ error: ERR_USER_404 });
+  }
+
+  try {
+    const deleteUserQuery = `
+      DELETE FROM users
+      WHERE id = $1
+    `;
+    await sql.query(deleteUserQuery, [userId]);
+
+    res.status(200).json({ msg: `User with id ${userId} ${DELETED}` });
   } catch (error) {
     console.error(ERR_SERVER, error);
     res.status(500).json({ error: ERR_SERVER });

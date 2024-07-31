@@ -4,7 +4,7 @@ const MSG_TEMPLATES = {
   REJECTED: " records have invalid syntax and were automatically rejected.",
   DUPLICATES:
     " records already exist in database and were automatically rejected.",
-  DELETED: `Rental record deleted successfully.`,
+  DELETED: `was deleted successfully.`,
   NO_USERS: "There're no users in database",
   NO_BOOKS: "There're no books in database",
   ERR_NOT_RENTED: "This copy of the book is not rented",

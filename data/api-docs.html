@@ -109,7 +109,82 @@
       <pre><code>{ "error": "User not found" }</code></pre>
     </div>
 
-    <h3>3. Get All Books</h3>
+    <h3>3. Add a User</h3>
+    <p class="endpoint"><span class="method">POST</span> /users</p>
+    <p>Adds a new user to the database.</p>
+
+    <h4>Payload</h4>
+    <div class="payload">
+      <pre><code>{ "name": "Alice Johnson" }</code></pre>
+    </div>
+
+    <h4>Response on Success</h4>
+    <div class="success">
+      <pre><code>{
+    "id": 3,
+    "name": "Alice Johnson"
+  }</code></pre>
+    </div>
+
+    <h4>Errors</h4>
+    <div class="error">
+      <pre><code>{ "error": "All records have failed syntax check, no new records were added" }</code></pre>
+    </div>
+    <div class="error">
+      <pre><code>{ "error": "Internal Server Error" }</code></pre>
+    </div>
+
+    <h3>4. Edit User Info</h3>
+    <p class="endpoint"><span class="method">PATCH</span> /users/:userId</p>
+    <p>Edits user information based on their ID.</p>
+
+    <h4>Payload</h4>
+    <div class="payload">
+      <pre><code>{ "name": "Alex Boot" }</code></pre>
+    </div>
+
+    <h4>Response on Success</h4>
+    <div class="success">
+      <pre><code>{
+    "id": 1,
+    "name": "Alex Boot"
+  }</code></pre>
+    </div>
+
+    <h4>Errors</h4>
+    <div class="error">
+      <pre><code>{ "error": "User not found" }</code></pre>
+    </div>
+    <div class="error">
+      <pre><code>{ "error": "All records have failed syntax check, no new records were added" }</code></pre>
+    </div>
+    <div class="error">
+      <pre><code>{ "error": "Internal Server Error" }</code></pre>
+    </div>
+
+    <h3>5. Delete User</h3>
+    <p class="endpoint"><span class="method">DELETE</span> /users/:userId</p>
+    <p>Deletes a user from the database.</p>
+
+    <h4>Payload</h4>
+    <div class="payload">
+      <pre><code>No request body required</code></pre>
+    </div>
+
+    <h4>Response on Success</h4>
+    <div class="success">
+      <pre><code>{ "msg": "User with id 1 deleted successfully." }</code></pre>
+    </div>
+
+    <h4>Errors</h4>
+    <div class="error">
+      <pre><code>{ "error": "User not found" }</code></pre>
+    </div>
+    <div class="error">
+      <pre><code>{ "error": "Internal Server Error" }</code></pre>
+    </div>
+
+    <h3>6. Get All Books</h3>
     <p class="endpoint"><span class="method">GET</span> /books</p>
     <p>
       Fetches all books from the database, including total and available copies.
@@ -140,7 +215,7 @@
       <pre><code>{ "msg": "There're no books in database" }</code></pre>
     </div>
 
-    <h3>4. Get Book by ID</h3>
+    <h3>7. Get Book by ID</h3>
     <p class="endpoint"><span class="method">GET</span> /books/:bookId</p>
     <p>
       Fetches a book by its numeric ID, including total and available copies.
@@ -168,7 +243,7 @@
       <pre><code>{ "error": "Book not found" }</code></pre>
     </div>
 
-    <h3>5. Rent a Book</h3>
+    <h3>8. Rent a Book</h3>
     <p class="endpoint"><span class="method">POST</span> /books/:id/rent</p>
     <p>Rents a book by its ID for a specific user.</p>
 
@@ -190,7 +265,7 @@
       <pre><code>{ "error": "Internal Server Error" }</code></pre>
     </div>
 
-    <h3>6. Return a Book</h3>
+    <h3>9. Return a Book</h3>
     <p class="endpoint"><span class="method">DELETE</span> /books/:id/rent</p>
     <p>Deletes the rental record for a book copy.</p>
 
@@ -212,7 +287,7 @@
       <pre><code>{ "error": "Internal Server Error" }</code></pre>
     </div>
 
-    <h3>7. Get All Rentals by User</h3>
+    <h3>10. Get All Rentals by User</h3>
     <p class="endpoint">
       <span class="method">GET</span> /users/:userId/rentals
     </p>
@@ -247,32 +322,7 @@
       <pre><code>{ "error": "Internal Server Error" }</code></pre>
     </div>
 
-    <h3>8. Add a User</h3>
-    <p class="endpoint"><span class="method">POST</span> /users</p>
-    <p>Adds a new user to the database.</p>
-
-    <h4>Payload</h4>
-    <div class="payload">
-      <pre><code>{ "name": "Alice Johnson" }</code></pre>
-    </div>
-
-    <h4>Response on Success</h4>
-    <div class="success">
-      <pre><code>{
-    "id": 3,
-    "name": "Alice Johnson"
-  }</code></pre>
-    </div>
-
-    <h4>Errors</h4>
-    <div class="error">
-      <pre><code>{ "error": "All records have failed syntax check, no new records were added" }</code></pre>
-    </div>
-    <div class="error">
-      <pre><code>{ "error": "Internal Server Error" }</code></pre>
-    </div>
-
-    <h3>9. Bulk Insert Users or Books</h3>
+    <h3>11. Bulk Insert Users or Books</h3>
     <p class="endpoint"><span class="method">POST</span> /bulk/:table</p>
     <p>Inserts multiple users or books in bulk.</p>
 
@@ -312,7 +362,7 @@
       <pre><code>{ "error": "Internal Server Error" }</code></pre>
     </div>
 
-    <h3>10. Handle 404 Errors</h3>
+    <h3>12. Handle 404 Errors</h3>
     <p class="endpoint"><span class="method">ALL</span> *</p>
     <p>Handles any invalid endpoints not defined in the API.</p>
 
