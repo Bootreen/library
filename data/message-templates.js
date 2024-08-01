@@ -1,4 +1,4 @@
-const MSG_TEMPLATES = {
+export const MSG_TEMPLATES = {
   SERVER: "Server running on port",
   ADDED: " records were successfully added.",
   REJECTED: " records have invalid syntax and were automatically rejected.",
@@ -19,5 +19,3 @@ const MSG_TEMPLATES = {
   ERR_BOOK_404: "Book not found",
   ERR_NO_COPY: "No free copies left",
 };
-
-module.exports = MSG_TEMPLATES;

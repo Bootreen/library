@@ -1,10 +1,12 @@
-require("dotenv").config();
-const fs = require("fs");
-const path = require("path");
-const express = require("express");
-const cors = require("cors");
-const { sql } = require("@vercel/postgres");
-const MSG_TEMPLATES = require("./data/message-templates");
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+import { sql } from "@vercel/postgres";
+import { MSG_TEMPLATES } from "./data/message-templates.js";
 
 const {
   SERVER,
@@ -28,21 +30,16 @@ const {
 } = MSG_TEMPLATES;
 
 const app = express();
-app.use(express.json());
-// Enable CORS for all external domains
-app.use(cors());
+const fileName = fileURLToPath(import.meta.url);
+const dirName = path.dirname(fileName);
 
+app.use(express.json()); // Enable JSON-parsing
+app.use(cors()); // Enable CORS for all external domains
+app.use(express.static(path.join(dirName, "doc"))); // Define static path
+
+// Show documentation
 app.get("/", (_, res) => {
-  // Define path for the HTML-file with API DOCs
-  const filePath = path.join("./data/api-docs.html");
-  // Read file via node file system and send it as result
-  fs.readFile(filePath, "utf8", (err, data) => {
-    if (err) {
-      res.status(500).json(ERR_SERVER);
-    } else {
-      res.send(data);
-    }
-  });
+  res.sendFile(path.join(dirName, "doc", "api-docs.html"));
 });
 
 // Show all users
