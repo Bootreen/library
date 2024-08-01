@@ -58,7 +58,7 @@ export const getBook = async (req, res) => {
 };
 
 export const rentBook = async (req, res) => {
-  const { id } = req.params;
+  const { bookId } = req.params;
   const { userId } = req.body;
 
   try {
@@ -69,7 +69,7 @@ export const rentBook = async (req, res) => {
       LEFT JOIN rentals ON copies.id = rentals.copyId
       WHERE copies.bookId = $1 AND rentals.copyId IS NULL
       LIMIT 1`;
-    const { rows: availableCopies } = await sql.query(findCopyQuery, [id]);
+    const { rows: availableCopies } = await sql.query(findCopyQuery, [bookId]);
 
     // No available copies left
     if (availableCopies.length === 0) {

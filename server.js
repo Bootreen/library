@@ -7,55 +7,24 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { MSG_TEMPLATES } from "./data/message-templates.js";
 
-import {
-  getUsers,
-  getUser,
-  addUser,
-  editUser,
-  deleteUser,
-  getUserRentals,
-} from "./controllers/users.js";
-
-import {
-  getBooks,
-  getBook,
-  rentBook,
-  returnBook,
-} from "./controllers/books.js";
-import { bulkAdd } from "./controllers/bulk.js";
+import { router as usersRouter } from "./routes/users.routes.js";
+import { router as booksRouter } from "./routes/books.routes.js";
+import { router as bulkRouter } from "./routes/bulk.routes.js";
+import { router as defaultRouter } from "./routes/default.routes.js";
 
 const app = express();
+
 const fileName = fileURLToPath(import.meta.url);
-const dirName = path.dirname(fileName);
+export const dirName = path.dirname(fileName);
 
 app.use(express.json()); // Enable JSON-parsing
 app.use(cors()); // Enable CORS for all external domains
 app.use(express.static(path.join(dirName, "html"))); // Define static path
 
-// Show documentation
-app.get("/", (_, res) => {
-  res.sendFile(path.join(dirName, "html", "api-docs.html"));
-});
-
-app.get("/users", getUsers);
-app.get("/users/:userId(\\d+)", getUser);
-app.get("/users/:userId(\\d+)/rentals", getUserRentals);
-app.post("/users", addUser);
-app.patch("/users/:userId", editUser);
-app.delete("/users/:userId", deleteUser);
-
-app.get("/books", getBooks);
-app.get("/books/:bookId(\\d+)", getBook);
-app.post("/books/:id(\\d+)/rent", rentBook);
-app.delete("/books/:id(\\d+)/rent", returnBook);
-
-// Bulk add new users or books
-app.post("/bulk/:table", bulkAdd);
-
-// Error 404 handling
-app.all("*", (_, res) => {
-  res.status(404).sendFile(path.join(dirName, "html", "404.html"));
-});
+app.use("/users", usersRouter); // User operations
+app.use("/books", booksRouter); // Book operations
+app.use("/bulk", bulkRouter); // Bulk add new users or books
+app.use("/", defaultRouter); // Documentation and 404.html
 
 const port = process.env.PORT || 3000;
 const { SERVER } = MSG_TEMPLATES;

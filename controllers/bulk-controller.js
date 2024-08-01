@@ -1,3 +1,16 @@
+import { sql } from "@vercel/postgres";
+import { MSG_TEMPLATES } from "../data/message-templates.js";
+
+const {
+  ADDED,
+  REJECTED,
+  DUPLICATES,
+  ERR_SERVER,
+  ERR_TABLE,
+  ERR_SYNTAX,
+  ERR_DUPLICATES,
+} = MSG_TEMPLATES;
+
 export const bulkAdd = async (req, res) => {
   const { table } = req.params;
   const { payload } = req.body;
