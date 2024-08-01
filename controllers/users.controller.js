@@ -47,7 +47,7 @@ export const getUser = async (req, res) => {
 
 export const addUser = async (req, res) => {
   const { name } = req.body;
-  if (isSyntaxError("user", [name]))
+  if (isSyntaxError("users", [name]))
     return res.status(400).json({ error: ERR_SYNTAX });
   try {
     const { user, isNotFound } = await fetchUser(name);

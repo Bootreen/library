@@ -14,4 +14,5 @@ export const SQL_QUERIES = {
     "INSERT INTO rentals (userId, copyId, rentalDate) VALUES ($1, $2, CURRENT_TIMESTAMP) RETURNING copyId",
   SELECT_RENTAL: "SELECT rentals.id FROM rentals WHERE rentals.copyId = $1",
   DELETE_RENTAL: "DELETE FROM rentals WHERE id = $1",
+  INSERT_COPY: "INSERT INTO copies (bookId) VALUES",
 };

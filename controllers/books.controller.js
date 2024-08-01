@@ -62,7 +62,7 @@ export const returnBook = async (req, res) => {
     await deleteRental(rentalId);
     res.status(200).json({ msg: `Rental with copy id ${copyId} ${DELETED}` });
   } catch (error) {
-    console.error(ERR_DELETE, error);
-    res.status(500).json({ error: ERR_SERVER });
+    console.error(ERR_SERVER, error);
+    res.status(500).json({ error: ERR_DELETE });
   }
 };
