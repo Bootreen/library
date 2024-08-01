@@ -36,9 +36,8 @@ export const editUserById = async (userId, name) => {
   return rows[0];
 };
 
-export const deleteUserById = async (userId) => {
+export const deleteUserById = async (userId) =>
   await sql.query(DELETE_USER, [userId]);
-};
 
 export const fetchUserRentals = async (userId) => {
   const { rows } = await sql.query(SELECT_USER_RENTALS, [userId]);

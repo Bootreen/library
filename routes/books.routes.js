@@ -4,7 +4,7 @@ import {
   getBook,
   rentBook,
   returnBook,
-} from "../controllers/books-controller.js";
+} from "../controllers/books.controller.js";
 
 export const router = Router();
 

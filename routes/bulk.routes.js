@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { bulkAdd } from "../controllers/bulk-controller.js";
+import { bulkAdd } from "../controllers/bulk.controller.js";
 
 export const router = Router();
 

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { showDoc, show404 } from "../controllers/default-controller.js";
+import { showDoc, show404 } from "../controllers/default.controller.js";
 
 export const router = Router();
 
