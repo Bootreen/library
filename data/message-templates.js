@@ -1,4 +1,4 @@
-const MSG_TEMPLATES = {
+export const MSG_TEMPLATES = {
   SERVER: "Server running on port",
   ADDED: " records were successfully added.",
   REJECTED: " records have invalid syntax and were automatically rejected.",
@@ -13,11 +13,11 @@ const MSG_TEMPLATES = {
   ERR_SYNTAX: "All records have failed syntax check, no new records were added",
   ERR_DUPLICATES: "All valid records already exist, no new records were added",
   ERR_SERVER: "Internal Server Error",
-  ERR_INSERT: "Error inserting record(s)",
+  ERR_INSERT: "Failed to insert record(s)",
+  ERR_EDIT: "Failed to edit record",
+  ERR_DELETE: "Failed to delete record",
   ERR_NOT_FOUND: "Error 404: path not found",
   ERR_USER_404: "User not found",
   ERR_BOOK_404: "Book not found",
   ERR_NO_COPY: "No free copies left",
 };
-
-module.exports = MSG_TEMPLATES;

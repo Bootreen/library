@@ -130,9 +130,6 @@
     <div class="error">
       <pre><code>{ "error": "All records have failed syntax check, no new records were added" }</code></pre>
     </div>
-    <div class="error">
-      <pre><code>{ "error": "Internal Server Error" }</code></pre>
-    </div>
 
     <h3>4. Edit User Info</h3>
     <p class="endpoint"><span class="method">PATCH</span> /users/:userId</p>
@@ -158,9 +155,6 @@
     <div class="error">
       <pre><code>{ "error": "All records have failed syntax check, no new records were added" }</code></pre>
     </div>
-    <div class="error">
-      <pre><code>{ "error": "Internal Server Error" }</code></pre>
-    </div>
 
     <h3>5. Delete User</h3>
     <p class="endpoint"><span class="method">DELETE</span> /users/:userId</p>
@@ -179,9 +173,6 @@
     <h4>Errors</h4>
     <div class="error">
       <pre><code>{ "error": "User not found" }</code></pre>
-    </div>
-    <div class="error">
-      <pre><code>{ "error": "Internal Server Error" }</code></pre>
     </div>
 
     <h3>6. Get All Books</h3>
@@ -243,8 +234,27 @@
       <pre><code>{ "error": "Book not found" }</code></pre>
     </div>
 
-    <h3>8. Rent a Book</h3>
-    <p class="endpoint"><span class="method">POST</span> /books/:id/rent</p>
+    <h3>8. Delete Book by ID</h3>
+    <p class="endpoint"><span class="method">DELETE</span> /books/:bookId</p>
+    <p>Deletes all book copies first, then deletes book by its numeric ID</p>
+
+    <h4>Payload</h4>
+    <div class="payload">
+      <pre><code>No request body required</code></pre>
+    </div>
+
+    <h4>Response on Success</h4>
+    <div class="success">
+      <pre><code>"msg": "Book with id 115 deleted successfully."</code></pre>
+    </div>
+
+    <h4>Errors</h4>
+    <div class="error">
+      <pre><code>{ "error": "Book not found" }</code></pre>
+    </div>
+
+    <h3>9. Rent a Book</h3>
+    <p class="endpoint"><span class="method">POST</span> /books/:bookId/rent</p>
     <p>Rents a book by its ID for a specific user.</p>
 
     <h4>Payload</h4>
@@ -261,12 +271,11 @@
     <div class="error">
       <pre><code>{ "error": "No free copies left" }</code></pre>
     </div>
-    <div class="error">
-      <pre><code>{ "error": "Internal Server Error" }</code></pre>
-    </div>
 
-    <h3>9. Return a Book</h3>
-    <p class="endpoint"><span class="method">DELETE</span> /books/:id/rent</p>
+    <h3>10. Return a Book</h3>
+    <p class="endpoint">
+      <span class="method">DELETE</span> /books/:bookId/rent
+    </p>
     <p>Deletes the rental record for a book copy.</p>
 
     <h4>Payload</h4>
@@ -283,11 +292,8 @@
     <div class="error">
       <pre><code>{ "error": "This copy of the book is not rented" }</code></pre>
     </div>
-    <div class="error">
-      <pre><code>{ "error": "Internal Server Error" }</code></pre>
-    </div>
 
-    <h3>10. Get All Rentals by User</h3>
+    <h3>11. Get All Rentals by User</h3>
     <p class="endpoint">
       <span class="method">GET</span> /users/:userId/rentals
     </p>
@@ -318,11 +324,8 @@
     <div class="error">
       <pre><code>{ "error": "This user didn't rent any book" }</code></pre>
     </div>
-    <div class="error">
-      <pre><code>{ "error": "Internal Server Error" }</code></pre>
-    </div>
 
-    <h3>11. Bulk Insert Users or Books</h3>
+    <h3>12. Bulk Insert Users or Books</h3>
     <p class="endpoint"><span class="method">POST</span> /bulk/:table</p>
     <p>Inserts multiple users or books in bulk.</p>
 
@@ -358,17 +361,14 @@
     <div class="error">
       <pre><code>{ "error": "All valid records already exist, no new records were added" }</code></pre>
     </div>
-    <div class="error">
-      <pre><code>{ "error": "Internal Server Error" }</code></pre>
-    </div>
 
-    <h3>12. Handle 404 Errors</h3>
+    <h3>13. Handle 404 Errors</h3>
     <p class="endpoint"><span class="method">ALL</span> *</p>
     <p>Handles any invalid endpoints not defined in the API.</p>
 
     <h4>Errors</h4>
     <div class="error">
-      <pre><code>{ "error": "Error 404: path not found" }</code></pre>
+      <pre><code>Shows 404.html page</code></pre>
     </div>
   </body>
 </html>
