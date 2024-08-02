@@ -1,10 +1,12 @@
 import {
   fetchBooks,
   fetchBook,
+  deleteBookById,
   findBookCopy,
   addRental,
   fetchRental,
   deleteRental,
+  deleteCopiesByBookId,
 } from "../database/books.operations.js";
 import { MSG_TEMPLATES } from "../data/message-templates.js";
 const {
@@ -37,6 +39,20 @@ export const getBook = async (req, res) => {
   } catch (error) {
     console.error(ERR_SERVER, error);
     res.status(500).json({ error: ERR_SERVER });
+  }
+};
+
+export const deleteBook = async (req, res) => {
+  const { bookId } = req.params;
+  try {
+    const { isNotFound } = await fetchBook(bookId);
+    if (isNotFound) return res.status(404).json({ msg: ERR_BOOK_404 });
+    await deleteCopiesByBookId(bookId);
+    await deleteBookById(bookId);
+    res.status(200).json({ msg: `Book with id ${bookId} ${DELETED}` });
+  } catch (error) {
+    console.error(ERR_SERVER, error);
+    res.status(500).json({ error: ERR_DELETE });
   }
 };
 

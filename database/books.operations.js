@@ -3,10 +3,12 @@ import { SQL_QUERIES } from "./sql-queries.js";
 const {
   SELECT_BOOKS,
   SELECT_BOOK,
+  DELETE_BOOK,
   FIND_COPY,
   INSERT_RENTAL,
   SELECT_RENTAL,
   DELETE_RENTAL,
+  DELETE_COPIES,
 } = SQL_QUERIES;
 
 export const fetchBooks = async () => {
@@ -26,6 +28,12 @@ export const findBookCopy = async (bookId) => {
   const isNoCopies = rows.length === 0 ? true : false;
   return { copyId: rows[0].id, isNoCopies };
 };
+
+export const deleteCopiesByBookId = async (bookId) =>
+  await sql.query(DELETE_COPIES, [bookId]);
+
+export const deleteBookById = async (bookId) =>
+  await sql.query(DELETE_BOOK, [bookId]);
 
 export const addRental = async (userId, copyId) => {
   await sql.query(INSERT_RENTAL, [userId, copyId]);

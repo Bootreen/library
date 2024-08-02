@@ -8,6 +8,7 @@ export const SQL_QUERIES = {
   SELECT_USER_RENTALS: `SELECT copyId as "copyId", rentalDate as "rentalDate", books.title as "title", books.id as "bookId" FROM rentals INNER JOIN copies ON rentals.copyId = copies.id INNER JOIN books ON copies.bookId = books.id WHERE rentals.userId = $1 ORDER BY rentals.rentalDate DESC`,
   SELECT_BOOKS: `SELECT books.id, books.title, books.author, books.coverImage as "coverImage", COUNT(copies.id) as "totalCopies", COUNT(copies.id) - COUNT(rentals.id) as "copiesInStock" FROM books LEFT JOIN copies ON books.id = copies.bookId LEFT JOIN rentals ON copies.id = rentals.copyId GROUP BY books.id`,
   SELECT_BOOK: `SELECT books.id, books.title, books.author, books.coverImage as "coverImage", COUNT(copies.id) as "totalCopies", COUNT(copies.id) - COUNT(rentals.id) as "copiesInStock" FROM books LEFT JOIN copies ON books.id = copies.bookId LEFT JOIN rentals ON copies.id = rentals.copyId WHERE books.id = $1 GROUP BY books.id`,
+  DELETE_BOOK: "DELETE FROM books WHERE id = $1",
   FIND_COPY:
     "SELECT copies.id FROM copies LEFT JOIN rentals ON copies.id = rentals.copyId WHERE copies.bookId = $1 AND rentals.copyId IS NULL LIMIT 1",
   INSERT_RENTAL:
@@ -15,4 +16,5 @@ export const SQL_QUERIES = {
   SELECT_RENTAL: "SELECT rentals.id FROM rentals WHERE rentals.copyId = $1",
   DELETE_RENTAL: "DELETE FROM rentals WHERE id = $1",
   INSERT_COPY: "INSERT INTO copies (bookId) VALUES",
+  DELETE_COPIES: "DELETE FROM copies WHERE bookId = $1",
 };

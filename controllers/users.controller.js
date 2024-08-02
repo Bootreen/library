@@ -79,9 +79,9 @@ export const editUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   const { userId } = req.params;
-  const { isNotFound } = await fetchUser(Number(userId));
-  if (isNotFound) return res.status(404).json({ error: ERR_USER_404 });
   try {
+    const { isNotFound } = await fetchUser(Number(userId));
+    if (isNotFound) return res.status(404).json({ error: ERR_USER_404 });
     await deleteUserById(userId);
     res.status(200).json({ msg: `User with id ${userId} ${DELETED}` });
   } catch (error) {
@@ -92,9 +92,9 @@ export const deleteUser = async (req, res) => {
 
 export const getUserRentals = async (req, res) => {
   const { userId } = req.params;
-  const { isNotFound } = await fetchUser(Number(userId));
-  if (isNotFound) return res.status(404).json({ error: ERR_USER_404 });
   try {
+    const { isNotFound } = await fetchUser(Number(userId));
+    if (isNotFound) return res.status(404).json({ error: ERR_USER_404 });
     const { rentals, isNoRentals } = await fetchUserRentals(userId);
     if (isNoRentals) return res.status(404).json({ error: ERR_NO_RENTALS });
     else res.status(200).json(rentals);
