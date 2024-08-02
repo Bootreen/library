@@ -27,7 +27,7 @@ export const findBookCopy = async (bookId) => {
   return { copyId: rows[0].id, isNoCopies };
 };
 
-export const addRentalRecord = async (userId, copyId) => {
+export const addRental = async (userId, copyId) => {
   await sql.query(INSERT_RENTAL, [userId, copyId]);
 };
 

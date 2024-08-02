@@ -5,7 +5,7 @@ import {
   insertBooksCopies,
 } from "../utils/controllers-utils.js";
 import { MSG_TEMPLATES } from "../data/message-templates.js";
-import { insertByDynamicQuery } from "../database/bulk.operations.js";
+import { insertUsersOrBooks } from "../database/bulk.operations.js";
 const {
   ADDED,
   REJECTED,
@@ -46,7 +46,7 @@ export const bulkAdd = async (req, res) => {
     const rejectedByDuplicates = approvedPayload.length - finalPayload.length;
     const { insertQuery, queryParams } = buildInsertQuery(table, finalPayload);
     // Insert into one of two tables (users or books), depending on the query
-    const { rowCount } = await insertByDynamicQuery(insertQuery, queryParams);
+    const { rowCount } = await insertUsersOrBooks(insertQuery, queryParams);
     // For the 'books' table we have to fill secondary table 'copies' as well
     if (table === "books") insertBooksCopies(finalPayload);
     // Report insertion result

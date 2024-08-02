@@ -2,7 +2,7 @@ import {
   fetchBooks,
   fetchBook,
   findBookCopy,
-  addRentalRecord,
+  addRental,
   fetchRental,
   deleteRental,
 } from "../database/books.operations.js";
@@ -46,7 +46,7 @@ export const rentBook = async (req, res) => {
   try {
     const { copyId, isNoCopies } = await findBookCopy(bookId);
     if (isNoCopies) return res.status(400).json({ error: ERR_NO_COPY });
-    await addRentalRecord(userId, copyId);
+    await addRental(userId, copyId);
     res.status(201).json({ copyId });
   } catch (error) {
     console.error(ERR_SERVER, error);

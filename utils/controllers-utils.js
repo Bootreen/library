@@ -1,5 +1,5 @@
 import {
-  fetchByDynamicQuery,
+  fetchUsersOrBooks,
   insertCopies,
 } from "../database/bulk.operations.js";
 
@@ -42,7 +42,7 @@ export const checkDuplicates = async (table, approvedPayload) => {
   // Build SQL query
   const query = `SELECT ${checkField} FROM ${table} WHERE ${checkField} IN (${placeholders})`;
   // Query for duplicate ids (names or titles)
-  const duplicates = await fetchByDynamicQuery(query, identifiers);
+  const duplicates = await fetchUsersOrBooks(query, identifiers);
   const isAllExist =
     approvedPayload.length === duplicates.length ? true : false;
   return { duplicates, isAllExist };
