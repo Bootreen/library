@@ -1,11 +1,14 @@
 import {
-  buildInsertQuery,
   checkDuplicates,
   checkPayload,
-  insertBooksCopies,
+  buildUsersOrBooksQuery,
+  prepareBookCopiesQuery,
 } from "../utils/controllers-utils.js";
+import {
+  insertUsersOrBooks,
+  insertCopies,
+} from "../database/bulk.operations.js";
 import { MSG_TEMPLATES } from "../data/message-templates.js";
-import { insertUsersOrBooks } from "../database/bulk.operations.js";
 const {
   ADDED,
   REJECTED,
@@ -14,6 +17,7 @@ const {
   ERR_TABLE,
   ERR_SYNTAX,
   ERR_DUPLICATES,
+  ERR_INSERT,
 } = MSG_TEMPLATES;
 
 export const bulkAdd = async (req, res) => {
@@ -44,11 +48,29 @@ export const bulkAdd = async (req, res) => {
       (record) => !duplicateIds.includes(record[checkField])
     );
     const rejectedByDuplicates = approvedPayload.length - finalPayload.length;
-    const { insertQuery, queryParams } = buildInsertQuery(table, finalPayload);
+    const { insertQuery, queryParams } = buildUsersOrBooksQuery(
+      table,
+      finalPayload
+    );
     // Insert into one of two tables (users or books), depending on the query
-    const { rowCount } = await insertUsersOrBooks(insertQuery, queryParams);
+    const { rows, rowCount } = await insertUsersOrBooks(
+      insertQuery,
+      queryParams
+    );
     // For the 'books' table we have to fill secondary table 'copies' as well
-    if (table === "books") insertBooksCopies(finalPayload);
+    if (table === "books") {
+      for (let i = 0; i < finalPayload.length; i++) {
+        // Take book id from SQL INSERT RETURNING
+        const { id: bookId } = rows[i];
+        // Take copies number from the payload itself
+        const { copies } = finalPayload[i];
+        const { copyValues, copyParams } = prepareBookCopiesQuery(
+          bookId,
+          copies
+        );
+        await insertCopies(copyValues, copyParams);
+      }
+    }
     // Report insertion result
     res.status(201).json({
       msg:

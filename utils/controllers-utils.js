@@ -1,7 +1,4 @@
-import {
-  fetchUsersOrBooks,
-  insertCopies,
-} from "../database/bulk.operations.js";
+import { fetchUsersOrBooks } from "../database/bulk.operations.js";
 
 export const isSyntaxError = (table, payload) => {
   if (table === "users") {
@@ -65,7 +62,7 @@ const buildSqlPlaceholders = (table, finalPayload) =>
         })
         .join(", ");
 
-export const buildInsertQuery = (table, finalPayload) => {
+export const buildUsersOrBooksQuery = (table, finalPayload) => {
   const sqlPlaceholders = buildSqlPlaceholders(table, finalPayload);
   // Build query
   const columns = table === "users" ? "(name)" : "(title, author, coverImage)";
@@ -82,18 +79,12 @@ export const buildInsertQuery = (table, finalPayload) => {
   return { insertQuery, queryParams };
 };
 
-export const insertBooksCopies = async (finalPayload) => {
-  for (let i = 0; i < finalPayload.length; i++) {
-    // Take book id from SQL INSERT RETURNING
-    const { id } = rows[i];
-    // Take copies number from the payload itself
-    const { copies } = finalPayload[i];
-    // Insert copies into 'copies' table
-    const copyValues = new Array(copies)
-      .fill("")
-      .map((_, index) => `($${index + 1})`)
-      .join(",");
-    const copyParams = new Array(copies).fill(id);
-    await insertCopies(copyValues, copyParams);
-  }
+export const prepareBookCopiesQuery = (bookId, copies) => {
+  // Prepare SQL value placeholders for the insert copies query
+  const copyValues = new Array(copies)
+    .fill("")
+    .map((_, index) => `($${index + 1})`)
+    .join(",");
+  const copyParams = new Array(copies).fill(bookId);
+  return { copyValues, copyParams };
 };

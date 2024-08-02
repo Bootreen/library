@@ -16,6 +16,7 @@ export const fetchUsers = async () => {
   return { users: rows, isEmpty };
 };
 
+// Can fetch both by id and name
 export const fetchUser = async (userIdOrName) => {
   const SELECT_USER_QUERY =
     typeof userIdOrName === "number" ? SELECT_USER_BY_ID : SELECT_USER_BY_NAME;
